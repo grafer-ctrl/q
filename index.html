@@ -150,7 +150,7 @@
   // ---------------------------------------------------------------
   // CONFIG
   // ---------------------------------------------------------------
-  const API_KEY = "4655c97d488b42e4af83de7c38650133";
+  const API_KEY = "68c36795a75a4b9c99e8ea500b7e5937";
   const HISTORY_URL = "https://api-v4.fcsapi.com/forex/history";
 
   const COLORS = {
@@ -271,8 +271,8 @@
   syncTimeScales(mainChart, subChart);
 
   window.addEventListener("resize", () => {
-    mainChart.applyOptions({ width: document.getElementById("mainChart").clientWidth });
-    subChart.applyOptions({ width: document.getElementById("subChart").clientWidth });
+    mainChart.resize(document.getElementById("mainChart").clientWidth, 300);
+    subChart.resize(document.getElementById("subChart").clientWidth, 150);
   });
 
   // ---------------------------------------------------------------
@@ -379,14 +379,39 @@
   // Data fetch
   // ---------------------------------------------------------------
   async function fetchCandles(symbol, period){
-    const url = `${HISTORY_URL}?symbol=${encodeURIComponent(symbol)}&period=${encodeURIComponent(period)}&access_key=${API_KEY}`;
+    // FCS API expects symbol format as "EURUSD", not "EUR/USD"
+    const cleanSymbol = symbol.replace("/", "");
+    const url = `${HISTORY_URL}?symbol=${encodeURIComponent(cleanSymbol)}&period=${encodeURIComponent(period)}&access_key=${API_KEY}`;
+    
     const res = await fetch(url);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const json = await res.json();
     if (!json.status) throw new Error(json.msg || "Gagal mengambil data");
-    const rows = Object.values(json.response).map(r => ({
-      time: r.t, open: parseFloat(r.o), high: parseFloat(r.h), low: parseFloat(r.l), close: parseFloat(r.c),
-    }));
+    
+    // Normalize response from object mapping or array mapping
+    let rawRows = [];
+    if (Array.isArray(json.response)) {
+      rawRows = json.response;
+    } else if (json.response && typeof json.response === "object") {
+      rawRows = Object.entries(json.response).map(([key, val]) => {
+        if (val && typeof val === 'object') {
+          return {
+            ...val,
+            t: val.t || val.tm || val.time || key
+          };
+        }
+        return val;
+      });
+    }
+
+    const rows = rawRows.map(r => ({
+      time: parseInt(r.t),
+      open: parseFloat(r.o),
+      high: parseFloat(r.h),
+      low: parseFloat(r.l),
+      close: parseFloat(r.c),
+    })).filter(r => r.time > 0 && !isNaN(r.open) && !isNaN(r.high) && !isNaN(r.low) && !isNaN(r.close));
+
     rows.sort((a, b) => a.time - b.time);
     return rows;
   }
