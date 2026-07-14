@@ -1,0 +1,2 @@
+# q
+Quantum EMA
