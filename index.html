@@ -1,428 +1,506 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Analisa Simple</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- TradingView Lightweight Charts CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-    <style>
-        body {
-            background-color: #ffffff;
-            font-family: Arial, sans-serif;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FX Portal — Golden Cross</title>
+<style>
+  :root{
+    --bg: #05070c;
+    --panel: #0b0f18;
+    --panel-2: #0e131e;
+    --grid: #171d2b;
+    --text: #e6e9f0;
+    --text-dim: #7d879c;
+    --buy: #1E90FF;
+    --sell: #FF1493;
+    --neutral: #8a8f9a;
+    --bb: #20B2AA;
+    --line: #232a3b;
+    --up: #26a65b;
+    --down: #e0405a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}
+  body{display:flex;justify-content:center;}
+  .app{width:100%;max-width:480px;min-height:100vh;display:flex;flex-direction:column;border-left:1px solid var(--line);border-right:1px solid var(--line);}
+
+  header{padding:14px 16px 10px;border-bottom:1px solid var(--line);}
+  .brand{display:flex;align-items:baseline;justify-content:space-between;}
+  .brand h1{font-size:16px;margin:0;letter-spacing:.5px;font-weight:700;}
+  .brand h1 span{color:var(--buy);}
+  .clock{font-size:11px;color:var(--text-dim);}
+  .quote-row{display:flex;align-items:baseline;gap:10px;margin-top:8px;}
+  .quote-sym{font-size:20px;font-weight:700;}
+  .quote-price{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .quote-chg{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;padding:2px 6px;border-radius:4px;}
+  .chg-up{color:var(--up);background:rgba(38,166,91,.12);}
+  .chg-down{color:var(--down);background:rgba(224,64,90,.12);}
+  .meta-row{font-size:11px;color:var(--text-dim);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;}
+  .meta-row b{color:var(--text);font-weight:600;}
+
+  .chart-block{position:relative;background:#000;border-bottom:1px solid var(--line);}
+  .chart-label{position:absolute;top:4px;left:8px;z-index:5;font-size:10.5px;color:#cfd6e4;line-height:1.5;pointer-events:none;text-shadow:0 1px 2px #000;}
+  .chart-label .tag{font-weight:700;}
+  #mainChart{width:100%;height:300px;}
+  #subChart{width:100%;height:150px;}
+
+  .status{padding:6px 16px;font-size:11px;color:var(--text-dim);border-bottom:1px solid var(--line);min-height:16px;}
+  .status.err{color:var(--down);}
+  .status.ok{color:var(--up);}
+
+  .controls{padding:14px 16px 18px;}
+  .group-label{font-size:10px;letter-spacing:1.5px;color:var(--text-dim);margin:14px 0 8px;text-transform:uppercase;}
+  .group-label:first-child{margin-top:0;}
+  .btn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .btn{
+    background:#000;border:1.5px solid #3a4257;color:#f2f4f8;
+    padding:14px 6px;font-size:13px;font-weight:700;text-transform:lowercase;
+    border-radius:6px;cursor:pointer;letter-spacing:.3px;
+    transition:border-color .15s, background .15s, transform .05s;
+    text-align:center;
+  }
+  .btn:hover{border-color:#6b7690;}
+  .btn:active{transform:scale(.97);}
+  .btn.active{border-color:var(--buy);background:rgba(30,144,255,.12);color:#fff;}
+  .btn.refresh{border-color:var(--bb);}
+  .btn.refresh.spinning{opacity:.6;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:12px;padding:0 16px 16px;font-size:10.5px;color:var(--text-dim);}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+
+  footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--line);font-size:10px;color:var(--text-dim);text-align:center;}
+  footer a{color:var(--text-dim);}
+</style>
 </head>
-<body class="flex flex-col items-center p-4">
+<body>
+<div class="app">
 
-    <!-- Container Utama Sesuai Gambar (1 Kolom Sederhana) -->
-    <div class="w-full max-w-[600px] flex flex-col gap-4">
-        
-        <!-- Area Grafik (Background Hitam) -->
-        <div class="border-2 border-gray-300 rounded overflow-hidden bg-black relative">
-            
-            <!-- Loading indicator -->
-            <div id="loading-overlay" class="absolute inset-0 bg-black/80 z-50 flex flex-col items-center justify-center gap-2 transition-opacity duration-300">
-                <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <div class="text-xs text-gray-400">Loading data...</div>
-            </div>
-
-            <!-- Grafik Utama (Candlesticks, EMAs, Bollinger Bands) -->
-            <div id="main-chart" class="w-full h-[380px]"></div>
-            
-            <!-- Grafik Subwindow (Golden Cross & RSI Levels) -->
-            <div id="sub-chart" class="w-full h-[220px] border-t border-gray-800"></div>
-        </div>
-
-        <!-- Baris Tombol Pertama -->
-        <div class="flex gap-3">
-            <button id="btn-eurusd" onclick="changePair('EUR/USD')" class="flex-1 py-3 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white leading-tight">
-                eur/<br>usd
-            </button>
-            <button id="btn-gbpusd" onclick="changePair('GBP/USD')" class="flex-1 py-3 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white leading-tight">
-                gbp/<br>usd
-            </button>
-            <button onclick="fetchChartData()" class="flex-[1.5] py-3 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white hover:bg-gray-100 transition">
-                refress api
-            </button>
-        </div>
-
-        <!-- Baris Tombol Kedua -->
-        <div class="flex gap-3">
-            <button id="btn-1h" onclick="changeTimeframe('1h')" class="flex-1 py-4 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white">
-                h1
-            </button>
-            <button id="btn-4h" onclick="changeTimeframe('4h')" class="flex-1 py-4 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white">
-                h4
-            </button>
-            <button id="btn-30m" onclick="changeTimeframe('30m')" class="flex-1 py-4 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white">
-                m30
-            </button>
-        </div>
-
-        <!-- Pesan Error (jika limit API tercapai) -->
-        <div id="error-message" class="hidden text-center text-xs text-red-600 font-bold mt-2 bg-red-50 p-2 rounded border border-red-200">
-            Koneksi API gagal. Mohon tunggu 1 menit sebelum me-refresh kembali.
-        </div>
+  <header>
+    <div class="brand">
+      <h1>FX<span>▲</span>PORTAL</h1>
+      <div class="clock" id="clock">--:--:--</div>
     </div>
+    <div class="quote-row">
+      <div class="quote-sym" id="qSym">EUR/USD</div>
+      <div class="quote-price" id="qPrice">-.-----</div>
+      <div class="quote-chg" id="qChg">--</div>
+    </div>
+    <div class="meta-row">
+      <span>TF: <b id="qTf">H1</b></span>
+      <span>O <b id="qO">-</b></span>
+      <span>H <b id="qH">-</b></span>
+      <span>L <b id="qL">-</b></span>
+      <span>C <b id="qC">-</b></span>
+    </div>
+  </header>
 
-    <!-- Script Logika dan Visualisasi Grafik -->
-    <script>
-        const API_KEY = "8cd5e84fa4564322b907aaddac29b059";
-        let activePair = "EUR/USD";
-        let activeInterval = "1h"; // Default H1
+  <div class="chart-block">
+    <div class="chart-label">
+      <div><span id="mainSym">EURUSDm</span>,<span id="mainTf">H1</span></div>
+      <div class="tag" id="mainOhlc">1.13915 &nbsp;1.13927&nbsp; 1.13857 &nbsp;1.13927</div>
+    </div>
+    <div id="mainChart"></div>
+  </div>
 
-        let mainChart, subChart;
-        let candlestickSeries;
-        let upperBBSeries, lowerBBSeries;
-        let ribbonSeriesList = [];
-        let gcSeriesList = [];
-        let rsiLevelDummy;
+  <div class="chart-block">
+    <div class="chart-label">
+      <div><span class="tag">RSI(14)</span> <span id="rsiVal">--.--</span> &nbsp; Golden Cross Sub (5,8,13) <span id="subVals">-.---- -.---- -.----</span></div>
+    </div>
+    <div id="subChart"></div>
+  </div>
 
-        const COLOR_BUY = "#1E90FF";     // Dodger Blue
-        const COLOR_SELL = "#FF1493";    // Deep Pink
-        const COLOR_NEUTRAL = "#808080"; // Grey
+  <div class="status" id="statusBar">Memuat data…</div>
 
-        document.addEventListener("DOMContentLoaded", () => {
-            initCharts();
-            fetchChartData();
-        });
+  <div class="legend">
+    <span><i class="dot" style="background:var(--buy)"></i>Buy (EMA5&gt;EMA8&gt;EMA13)</span>
+    <span><i class="dot" style="background:var(--sell)"></i>Sell (EMA5&lt;EMA8&lt;EMA13)</span>
+    <span><i class="dot" style="background:var(--neutral)"></i>Netral</span>
+    <span><i class="dot" style="background:var(--bb)"></i>Bollinger Bands (20,2)</span>
+  </div>
 
-        function initCharts() {
-            const mainContainer = document.getElementById("main-chart");
-            const subContainer = document.getElementById("sub-chart");
+  <div class="controls">
+    <div class="group-label">Pasangan Mata Uang</div>
+    <div class="btn-grid">
+      <button class="btn" data-sym="EUR/USD" data-role="sym">eur/usd</button>
+      <button class="btn" data-sym="GBP/USD" data-role="sym">gbp/usd</button>
+      <button class="btn refresh" id="refreshBtn">refres api</button>
+    </div>
+    <div class="group-label">Timeframe</div>
+    <div class="btn-grid">
+      <button class="btn" data-tf="1h" data-role="tf">h1</button>
+      <button class="btn" data-tf="30m" data-role="tf">m30</button>
+      <button class="btn" data-tf="4h" data-role="tf">h4</button>
+    </div>
+  </div>
 
-            // Inisialisasi Grafik Utama
-            mainChart = LightweightCharts.createChart(mainContainer, {
-                width: mainContainer.clientWidth,
-                height: mainContainer.clientHeight,
-                layout: {
-                    background: { type: 'solid', color: '#000000' },
-                    textColor: '#ffffff',
-                    fontSize: 10,
-                },
-                grid: {
-                    vertLines: { color: 'rgba(42, 46, 57, 0.1)' },
-                    horzLines: { color: 'rgba(42, 46, 57, 0.1)' },
-                },
-                rightPriceScale: {
-                    borderColor: '#333333',
-                    minimumWidth: 60,
-                },
-                timeScale: {
-                    borderColor: '#333333',
-                    timeVisible: true,
-                },
-            });
+  <footer>
+    Data: FCS API &middot; Indikator dihitung di sisi klien (EMA, Bollinger Bands, RSI)<br>
+    Golden Cross by ema5/ema8/ema13 &middot; bukan nasihat finansial
+  </footer>
 
-            // Lilin model MT4 Green on Black
-            candlestickSeries = mainChart.addCandlestickSeries({
-                upColor: '#00FF00',      // Bullish body: hijau padat
-                downColor: '#000000',    // Bearish body: hitam
-                borderUpColor: '#00FF00',
-                borderDownColor: '#00FF00', // Garis tepi bearish: hijau
-                wickUpColor: '#00FF00',
-                wickDownColor: '#00FF00',
-            });
+</div>
 
-            // Bollinger Bands (Upper & Lower)
-            upperBBSeries = mainChart.addLineSeries({
-                color: '#A9A9A9',
-                lineWidth: 1,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
-                priceLineVisible: false,
-            });
-            lowerBBSeries = mainChart.addLineSeries({
-                color: '#A9A9A9',
-                lineWidth: 1,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
-                priceLineVisible: false,
-            });
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+(function(){
+  "use strict";
 
-            // 6 EMA Grid Ribbon
-            const periods = [10, 20, 30, 40, 50, 60];
-            ribbonSeriesList = periods.map(() => {
-                return mainChart.addLineSeries({
-                    lineWidth: 2,
-                    priceLineVisible: false,
-                });
-            });
+  // ---------------------------------------------------------------
+  // CONFIG
+  // ---------------------------------------------------------------
+  const API_KEY = "8cd5e84fa4564322b907aaddac29b059";
+  const HISTORY_URL = "https://api-v4.fcsapi.com/forex/history";
 
-            // Inisialisasi Grafik Subwindow (Bawah)
-            subChart = LightweightCharts.createChart(subContainer, {
-                width: subContainer.clientWidth,
-                height: subContainer.clientHeight,
-                layout: {
-                    background: { type: 'solid', color: '#000000' },
-                    textColor: '#ffffff',
-                    fontSize: 10,
-                },
-                grid: {
-                    vertLines: { color: 'rgba(42, 46, 57, 0.1)' },
-                    horzLines: { color: 'rgba(42, 46, 57, 0.1)' },
-                },
-                rightPriceScale: {
-                    borderColor: '#333333',
-                    minimumWidth: 60,
-                },
-                leftPriceScale: {
-                    borderColor: '#333333',
-                    visible: true,
-                },
-                timeScale: {
-                    borderColor: '#333333',
-                    timeVisible: true,
-                },
-            });
+  const COLORS = {
+    buy: "#1E90FF",
+    sell: "#FF1493",
+    neutral: "#8a8f9a",
+    bb: "#20B2AA",
+    up: "#26a65b",
+    down: "#e0405a",
+  };
 
-            // EMA 5, 8, 13 di Subwindow
-            const subPeriods = [5, 8, 13];
-            gcSeriesList = subPeriods.map(() => {
-                return subChart.addLineSeries({
-                    priceScaleId: 'right',
-                    lineWidth: 2,
-                    priceLineVisible: false,
-                });
-            });
+  let state = {
+    symbol: "EUR/USD",
+    period: "1h",
+    tfLabel: "H1",
+  };
 
-            // Skala Kiri Khusus RSI (Garis biru utama disembunyikan)
-            rsiLevelDummy = subChart.addLineSeries({
-                priceScaleId: 'left',
-                visible: false, 
-            });
+  // ---------------------------------------------------------------
+  // DOM refs
+  // ---------------------------------------------------------------
+  const statusBar = document.getElementById("statusBar");
+  const clockEl = document.getElementById("clock");
+  const refreshBtn = document.getElementById("refreshBtn");
 
-            subChart.priceScale('left').applyOptions({
-                autoScale: false,
-                minPrice: 0,
-                maxPrice: 100,
-            });
+  function setStatus(msg, kind){
+    statusBar.textContent = msg;
+    statusBar.className = "status" + (kind ? " " + kind : "");
+  }
 
-            // Level RSI: 85, 50, 15
-            rsiLevelDummy.createPriceLine({ price: 85, color: '#A9A9A9', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '85' });
-            rsiLevelDummy.createPriceLine({ price: 50, color: '#555555', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '50' });
-            rsiLevelDummy.createPriceLine({ price: 15, color: '#A9A9A9', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '15' });
+  function tickClock(){
+    clockEl.textContent = new Date().toLocaleTimeString("id-ID", { hour12:false });
+  }
+  setInterval(tickClock, 1000);
+  tickClock();
 
-            // Sinkronisasi Zoom dan Pan antar grafik
-            let isSyncing = false;
-            mainChart.timeScale().subscribeVisibleTimeRangeChange(range => {
-                if (isSyncing) return;
-                isSyncing = true;
-                subChart.timeScale().setVisibleRange(range);
-                isSyncing = false;
-            });
-            subChart.timeScale().subscribeVisibleTimeRangeChange(range => {
-                if (isSyncing) return;
-                isSyncing = true;
-                mainChart.timeScale().setVisibleRange(range);
-                isSyncing = false;
-            });
+  // ---------------------------------------------------------------
+  // Chart setup (lightweight-charts)
+  // ---------------------------------------------------------------
+  const chartOpts = {
+    layout: { background: { color: "#000000" }, textColor: "#8a93a8", fontSize: 10 },
+    grid: {
+      vertLines: { color: "#10141d" },
+      horzLines: { color: "#10141d" },
+    },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: "#1c2230" },
+    timeScale: { borderColor: "#1c2230", timeVisible: true, secondsVisible: false },
+    handleScroll: true,
+    handleScale: true,
+  };
 
-            // Resizing responsif
-            window.addEventListener("resize", () => {
-                mainChart.resize(mainContainer.clientWidth, mainContainer.clientHeight);
-                subChart.resize(subContainer.clientWidth, subContainer.clientHeight);
-            });
-        }
+  const mainChart = LightweightCharts.createChart(document.getElementById("mainChart"), {
+    ...chartOpts,
+    height: 300,
+  });
+  const subChart = LightweightCharts.createChart(document.getElementById("subChart"), {
+    ...chartOpts,
+    height: 150,
+  });
 
-        function changePair(pair) {
-            activePair = pair;
-            fetchChartData();
-        }
+  const candleSeries = mainChart.addCandlestickSeries({
+    upColor: COLORS.up, downColor: COLORS.down,
+    borderUpColor: COLORS.up, borderDownColor: COLORS.down,
+    wickUpColor: COLORS.up, wickDownColor: COLORS.down,
+  });
 
-        function changeTimeframe(tf) {
-            activeInterval = tf;
-            fetchChartData();
-        }
+  function lineSeries(chart, color, width, priceScaleId){
+    return chart.addLineSeries({
+      color: color,
+      lineWidth: width || 1.5,
+      priceScaleId: priceScaleId || "right",
+      lastValueVisible: false,
+      priceLineVisible: false,
+      crosshairMarkerVisible: false,
+    });
+  }
 
-        function updateButtonUI() {
-            // Reset status semua tombol menjadi outline putih-biru
-            const pairs = ['btn-eurusd', 'btn-gbpusd'];
-            pairs.forEach(id => {
-                document.getElementById(id).className = "flex-1 py-3 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white leading-tight";
-            });
+  // Main chart: EMA 5/8/13 split into buy/sell/neutral segments
+  const mEma5 = { buy: lineSeries(mainChart, COLORS.buy, 1.5), sell: lineSeries(mainChart, COLORS.sell, 1.5), neu: lineSeries(mainChart, COLORS.neutral, 1.5) };
+  const mEma8 = { buy: lineSeries(mainChart, COLORS.buy, 1.5), sell: lineSeries(mainChart, COLORS.sell, 1.5), neu: lineSeries(mainChart, COLORS.neutral, 1.5) };
+  const mEma13 = { buy: lineSeries(mainChart, COLORS.buy, 1.5), sell: lineSeries(mainChart, COLORS.sell, 1.5), neu: lineSeries(mainChart, COLORS.neutral, 1.5) };
 
-            const tfs = ['btn-1h', 'btn-4h', 'btn-30m'];
-            tfs.forEach(id => {
-                document.getElementById(id).className = "flex-1 py-4 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white";
-            });
+  // Bollinger Bands
+  const bbUpper = lineSeries(mainChart, COLORS.bb, 1, "right");
+  const bbMid = lineSeries(mainChart, COLORS.bb, 1, "right");
+  const bbLower = lineSeries(mainChart, COLORS.bb, 1, "right");
 
-            // Aktifkan warna biru penuh untuk tombol terpilih
-            const activePairId = activePair === "EUR/USD" ? 'btn-eurusd' : 'btn-gbpusd';
-            document.getElementById(activePairId).className = "flex-1 py-3 border-[3px] border-blue-700 rounded text-white font-bold text-center text-xl bg-blue-700 leading-tight";
+  // Sub chart: Golden Cross Sub EMA 5/8/13 (own autoscaled left scale)
+  const sEma5 = { buy: lineSeries(subChart, COLORS.buy, 1.5, "left"), sell: lineSeries(subChart, COLORS.sell, 1.5, "left"), neu: lineSeries(subChart, COLORS.neutral, 1.5, "left") };
+  const sEma8 = { buy: lineSeries(subChart, COLORS.buy, 1.5, "left"), sell: lineSeries(subChart, COLORS.sell, 1.5, "left"), neu: lineSeries(subChart, COLORS.neutral, 1.5, "left") };
+  const sEma13 = { buy: lineSeries(subChart, COLORS.buy, 1.5, "left"), sell: lineSeries(subChart, COLORS.sell, 1.5, "left"), neu: lineSeries(subChart, COLORS.neutral, 1.5, "left") };
+  subChart.priceScale("left").applyOptions({ visible: false });
 
-            const activeTfId = activeInterval === "1h" ? 'btn-1h' : activeInterval === "4h" ? 'btn-4h' : 'btn-30m';
-            document.getElementById(activeTfId).className = "flex-1 py-4 border-[3px] border-blue-700 rounded text-white font-bold text-center text-xl bg-blue-700";
-        }
+  // RSI: hidden line just to host the fixed 0-100 scale + level lines 15/50/85
+  const rsiHost = subChart.addLineSeries({
+    color: "rgba(0,0,0,0)",
+    lineWidth: 1,
+    priceScaleId: "right",
+    lastValueVisible: false,
+    priceLineVisible: false,
+    crosshairMarkerVisible: false,
+    autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }),
+  });
+  let levelLinesDrawn = false;
 
-        async function fetchChartData() {
-            showLoading(true);
-            hideError();
-            updateButtonUI();
+  // Sync horizontal scroll/zoom between the two charts
+  function syncTimeScales(a, b){
+    let guard = false;
+    a.timeScale().subscribeVisibleLogicalRangeChange(range => {
+      if (guard || !range) return;
+      guard = true; b.timeScale().setVisibleLogicalRange(range); guard = false;
+    });
+    b.timeScale().subscribeVisibleLogicalRangeChange(range => {
+      if (guard || !range) return;
+      guard = true; a.timeScale().setVisibleLogicalRange(range); guard = false;
+    });
+  }
+  syncTimeScales(mainChart, subChart);
 
-            const url = `https://api.twelvedata.com/time_series?symbol=${activePair}&interval=${activeInterval}&apikey=${API_KEY}&outputsize=100`;
+  window.addEventListener("resize", () => {
+    mainChart.applyOptions({ width: document.getElementById("mainChart").clientWidth });
+    subChart.applyOptions({ width: document.getElementById("subChart").clientWidth });
+  });
 
-            try {
-                const response = await fetch(url);
-                const result = await response.json();
+  // ---------------------------------------------------------------
+  // Indicator math
+  // ---------------------------------------------------------------
+  function ema(values, period){
+    const k = 2 / (period + 1);
+    const out = new Array(values.length).fill(undefined);
+    let prev;
+    for (let i = 0; i < values.length; i++){
+      if (i === period - 1){
+        let sum = 0;
+        for (let j = 0; j <= i; j++) sum += values[j];
+        prev = sum / period;
+        out[i] = prev;
+      } else if (i >= period){
+        prev = values[i] * k + prev * (1 - k);
+        out[i] = prev;
+      }
+    }
+    return out;
+  }
 
-                if (result.status !== "ok") {
-                    throw new Error(result.message || "Gagal mendapatkan data.");
-                }
+  function sma(values, period){
+    const out = new Array(values.length).fill(undefined);
+    for (let i = period - 1; i < values.length; i++){
+      let sum = 0;
+      for (let j = i - period + 1; j <= i; j++) sum += values[j];
+      out[i] = sum / period;
+    }
+    return out;
+  }
 
-                const rawValues = result.values.reverse();
-                const data = rawValues.map(v => ({
-                    time: parseDate(v.datetime),
-                    open: parseFloat(v.open),
-                    high: parseFloat(v.high),
-                    low: parseFloat(v.low),
-                    close: parseFloat(v.close)
-                }));
+  function bollinger(closes, period, mult){
+    const mid = sma(closes, period);
+    const upper = new Array(closes.length).fill(undefined);
+    const lower = new Array(closes.length).fill(undefined);
+    for (let i = period - 1; i < closes.length; i++){
+      let sq = 0;
+      for (let j = i - period + 1; j <= i; j++) sq += Math.pow(closes[j] - mid[i], 2);
+      const sd = Math.sqrt(sq / period);
+      upper[i] = mid[i] + mult * sd;
+      lower[i] = mid[i] - mult * sd;
+    }
+    return { mid, upper, lower };
+  }
 
-                // Set Lilin ke chart
-                candlestickSeries.setData(data);
+  function rsi(closes, period){
+    const out = new Array(closes.length).fill(undefined);
+    if (closes.length <= period) return out;
+    let gain = 0, loss = 0;
+    for (let i = 1; i <= period; i++){
+      const d = closes[i] - closes[i - 1];
+      if (d > 0) gain += d; else loss -= d;
+    }
+    let avgGain = gain / period, avgLoss = loss / period;
+    out[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+    for (let i = period + 1; i < closes.length; i++){
+      const d = closes[i] - closes[i - 1];
+      avgGain = (avgGain * (period - 1) + Math.max(d, 0)) / period;
+      avgLoss = (avgLoss * (period - 1) + Math.max(-d, 0)) / period;
+      out[i] = avgLoss === 0 ? (avgGain === 0 ? 50 : 100) : 100 - 100 / (1 + avgGain / avgLoss);
+    }
+    return out;
+  }
 
-                // Set Dummy RSI agar level garis terplot di subwindow
-                rsiLevelDummy.setData(data.map(d => ({ time: d.time, value: 50 })));
+  // Splits an EMA array into buy/sell/neutral segments based on
+  // ema5 vs ema8 vs ema13 trend state, mirroring golden_crose.mq4 logic.
+  function classify(ema5, ema8, ema13){
+    const states = new Array(ema5.length).fill(undefined);
+    for (let i = 0; i < ema5.length; i++){
+      if (ema5[i] === undefined || ema8[i] === undefined || ema13[i] === undefined) continue;
+      if (ema5[i] > ema8[i] && ema8[i] > ema13[i]) states[i] = "buy";
+      else if (ema5[i] < ema8[i] && ema8[i] < ema13[i]) states[i] = "sell";
+      else states[i] = "neu";
+    }
+    return states;
+  }
 
-                // 1. Hitung Bollinger Bands (20, 2)
-                const bb = calculateBollingerBands(data, 20, 2);
-                upperBBSeries.setData(bb.upper);
-                lowerBBSeries.setData(bb.lower);
+  function splitByState(times, values, states){
+    const out = { buy: [], sell: [], neu: [] };
+    let prevState;
+    for (let i = 0; i < values.length; i++){
+      const s = states[i];
+      if (s === undefined) { prevState = undefined; continue; }
+      if (prevState && prevState !== s){
+        // bridge the previous bar into the new color so lines connect
+        out[s].push({ time: times[i - 1], value: values[i - 1] });
+      }
+      out[s].push({ time: times[i], value: values[i] });
+      prevState = s;
+    }
+    return out;
+  }
 
-                // 2. Hitung & Plot Grid Ribbon 6 EMA (10, 20, 30, 40, 50, 60)
-                const ribbonPeriods = [10, 20, 30, 40, 50, 60];
-                ribbonPeriods.forEach((p, idx) => {
-                    const ema = calculateEMA(data, p);
-                    const plotData = [];
+  function applySplit(target, times, values, states){
+    const seg = splitByState(times, values, states);
+    target.buy.setData(seg.buy);
+    target.sell.setData(seg.sell);
+    target.neu.setData(seg.neu);
+  }
 
-                    for (let i = 1; i < data.length; i++) {
-                        if (ema[i] === null || ema[i-1] === null) continue;
+  // ---------------------------------------------------------------
+  // Data fetch
+  // ---------------------------------------------------------------
+  async function fetchCandles(symbol, period){
+    const url = `${HISTORY_URL}?symbol=${encodeURIComponent(symbol)}&period=${encodeURIComponent(period)}&access_key=${API_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    if (!json.status) throw new Error(json.msg || "Gagal mengambil data");
+    const rows = Object.values(json.response).map(r => ({
+      time: r.t, open: parseFloat(r.o), high: parseFloat(r.h), low: parseFloat(r.l), close: parseFloat(r.c),
+    }));
+    rows.sort((a, b) => a.time - b.time);
+    return rows;
+  }
 
-                        let color = COLOR_NEUTRAL;
-                        if (data[i].close > ema[i] && ema[i] > ema[i-1]) {
-                            color = COLOR_BUY;
-                        } else if (data[i].close < ema[i] && ema[i] < ema[i-1]) {
-                            color = COLOR_SELL;
-                        }
+  async function loadAndRender(){
+    setStatus("Mengambil data " + state.symbol + " (" + state.tfLabel + ")…");
+    refreshBtn.classList.add("spinning");
+    try {
+      const rows = await fetchCandles(state.symbol, state.period);
+      if (!rows.length) throw new Error("Data kosong");
+      render(rows);
+      setStatus("Terakhir diperbarui " + new Date().toLocaleTimeString("id-ID", { hour12:false }) + " · " + rows.length + " candle", "ok");
+    } catch (err){
+      console.error(err);
+      setStatus("Gagal memuat data: " + err.message + " (cek koneksi / kuota API / CORS)", "err");
+    } finally {
+      refreshBtn.classList.remove("spinning");
+    }
+  }
 
-                        plotData.push({
-                            time: data[i].time,
-                            value: ema[i],
-                            color: color
-                        });
-                    }
-                    ribbonSeriesList[idx].setData(plotData);
-                });
+  function render(rows){
+    const times = rows.map(r => r.time);
+    const closes = rows.map(r => r.close);
 
-                // 3. Hitung & Plot Golden Cross Sub (5, 8, 13)
-                const ema5 = calculateEMA(data, 5);
-                const ema8 = calculateEMA(data, 8);
-                const ema13 = calculateEMA(data, 13);
+    candleSeries.setData(rows.map(r => ({ time: r.time, open: r.open, high: r.high, low: r.low, close: r.close })));
 
-                const gc5 = [], gc8 = [], gc13 = [];
+    const e5 = ema(closes, 5), e8 = ema(closes, 8), e13 = ema(closes, 13);
+    const states = classify(e5, e8, e13);
 
-                for (let i = 1; i < data.length; i++) {
-                    if (ema13[i] === null || ema13[i-1] === null) continue;
+    applySplit(mEma5, times, e5, states);
+    applySplit(mEma8, times, e8, states);
+    applySplit(mEma13, times, e13, states);
+    applySplit(sEma5, times, e5, states);
+    applySplit(sEma8, times, e8, states);
+    applySplit(sEma13, times, e13, states);
 
-                    let color = COLOR_NEUTRAL;
-                    if (ema5[i] > ema8[i] && ema8[i] > ema13[i]) {
-                        color = COLOR_BUY;
-                    } else if (ema5[i] < ema8[i] && ema8[i] < ema13[i]) {
-                        color = COLOR_SELL;
-                    }
+    const bb = bollinger(closes, 20, 2);
+    bbUpper.setData(times.map((t,i)=>bb.upper[i]!==undefined?{time:t,value:bb.upper[i]}:null).filter(Boolean));
+    bbMid.setData(times.map((t,i)=>bb.mid[i]!==undefined?{time:t,value:bb.mid[i]}:null).filter(Boolean));
+    bbLower.setData(times.map((t,i)=>bb.lower[i]!==undefined?{time:t,value:bb.lower[i]}:null).filter(Boolean));
 
-                    gc5.push({ time: data[i].time, value: ema5[i], color: color });
-                    gc8.push({ time: data[i].time, value: ema8[i], color: color });
-                    gc13.push({ time: data[i].time, value: ema13[i], color: color });
-                }
+    const r = rsi(closes, 14);
+    rsiHost.setData(times.map((t,i)=>r[i]!==undefined?{time:t,value:r[i]}:null).filter(Boolean));
+    if (!levelLinesDrawn){
+      rsiHost.createPriceLine({ price: 85, color: "#4a5164", lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "85" });
+      rsiHost.createPriceLine({ price: 50, color: "#4a5164", lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: "50" });
+      rsiHost.createPriceLine({ price: 15, color: "#4a5164", lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "15" });
+      levelLinesDrawn = true;
+    }
 
-                gcSeriesList[0].setData(gc5);
-                gcSeriesList[1].setData(gc8);
-                gcSeriesList[2].setData(gc13);
+    mainChart.timeScale().fitContent();
 
-                mainChart.timeScale().fitContent();
+    // Header / labels
+    const last = rows[rows.length - 1];
+    const prevClose = rows.length > 1 ? rows[rows.length - 2].close : last.open;
+    const decimals = last.close < 10 ? 5 : 3;
+    document.getElementById("qSym").textContent = state.symbol;
+    document.getElementById("qPrice").textContent = last.close.toFixed(decimals);
+    document.getElementById("qTf").textContent = state.tfLabel;
+    document.getElementById("qO").textContent = last.open.toFixed(decimals);
+    document.getElementById("qH").textContent = last.high.toFixed(decimals);
+    document.getElementById("qL").textContent = last.low.toFixed(decimals);
+    document.getElementById("qC").textContent = last.close.toFixed(decimals);
+    const chg = last.close - prevClose;
+    const chgPct = (chg / prevClose) * 100;
+    const chgEl = document.getElementById("qChg");
+    chgEl.textContent = (chg >= 0 ? "+" : "") + chg.toFixed(decimals) + " (" + chgPct.toFixed(2) + "%)";
+    chgEl.className = "quote-chg " + (chg >= 0 ? "chg-up" : "chg-down");
 
-            } catch (err) {
-                showError();
-            } finally {
-                showLoading(false);
-            }
-        }
+    document.getElementById("mainSym").textContent = state.symbol.replace("/", "") + "m";
+    document.getElementById("mainTf").textContent = state.tfLabel;
+    document.getElementById("mainOhlc").textContent =
+      last.open.toFixed(decimals) + "  " + last.high.toFixed(decimals) + "  " + last.low.toFixed(decimals) + "  " + last.close.toFixed(decimals);
 
-        // Kalkulasi Bollinger Bands
-        function calculateBollingerBands(data, period, multiplier) {
-            const upper = [];
-            const lower = [];
+    const lastRsi = [...r].reverse().find(v => v !== undefined);
+    document.getElementById("rsiVal").textContent = lastRsi !== undefined ? lastRsi.toFixed(4) : "--.--";
+    const l5 = [...e5].reverse().find(v => v !== undefined);
+    const l8 = [...e8].reverse().find(v => v !== undefined);
+    const l13 = [...e13].reverse().find(v => v !== undefined);
+    document.getElementById("subVals").textContent =
+      [l5, l8, l13].map(v => v !== undefined ? v.toFixed(decimals) : "-.----").join(" ");
+  }
 
-            for (let i = 0; i < data.length; i++) {
-                if (i < period - 1) continue;
+  // ---------------------------------------------------------------
+  // Controls
+  // ---------------------------------------------------------------
+  document.querySelectorAll('[data-role="sym"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll('[data-role="sym"]').forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.symbol = btn.dataset.sym;
+      loadAndRender();
+    });
+  });
+  document.querySelectorAll('[data-role="tf"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll('[data-role="tf"]').forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.period = btn.dataset.tf;
+      state.tfLabel = btn.textContent.toUpperCase();
+      loadAndRender();
+    });
+  });
+  refreshBtn.addEventListener("click", loadAndRender);
 
-                let sum = 0;
-                for (let j = i - period + 1; j <= i; j++) {
-                    sum += data[j].close;
-                }
-                const sma = sum / period;
+  // Set initial active buttons
+  document.querySelector('[data-sym="EUR/USD"]').classList.add("active");
+  document.querySelector('[data-tf="1h"]').classList.add("active");
 
-                let sumDiffSq = 0;
-                for (let j = i - period + 1; j <= i; j++) {
-                    sumDiffSq += Math.pow(data[j].close - sma, 2);
-                }
-                const stdDev = Math.sqrt(sumDiffSq / period);
+  // Initial load + auto-refresh every 60s
+  loadAndRender();
+  setInterval(loadAndRender, 60000);
 
-                upper.push({ time: data[i].time, value: sma + (multiplier * stdDev) });
-                lower.push({ time: data[i].time, value: sma - (multiplier * stdDev) });
-            }
-            return { upper, lower };
-        }
-
-        // Kalkulasi EMA
-        function calculateEMA(data, period) {
-            const ema = Array(data.length).fill(null);
-            if (data.length < period) return ema;
-
-            let sum = 0;
-            for (let i = 0; i < period; i++) {
-                sum += data[i].close;
-            }
-            let prevEma = sum / period;
-            ema[period - 1] = prevEma;
-
-            const multiplier = 2 / (period + 1);
-            for (let i = period; i < data.length; i++) {
-                const curEma = (data[i].close - prevEma) * multiplier + prevEma;
-                ema[i] = curEma;
-                prevEma = curEma;
-            }
-            return ema;
-        }
-
-        function parseDate(str) {
-            const parts = str.split(' ');
-            const dateParts = parts[0].split('-');
-            const timeParts = parts[1].split(':');
-            return Date.UTC(
-                parseInt(dateParts[0]),
-                parseInt(dateParts[1]) - 1,
-                parseInt(dateParts[2]),
-                parseInt(timeParts[0]),
-                parseInt(timeParts[1]),
-                parseInt(timeParts[2] || '0')
-            ) / 1000;
-        }
-
-        function showLoading(visible) {
-            document.getElementById("loading-overlay").style.display = visible ? "flex" : "none";
-        }
-
-        function showError() {
-            document.getElementById("error-message").classList.remove("hidden");
-        }
-
-        function hideError() {
-            document.getElementById("error-message").classList.add("hidden");
-        }
-    </script>
+})();
+</script>
 </body>
 </html>
