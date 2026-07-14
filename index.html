@@ -3,309 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Analisa Forex - Live Dashboard</title>
+    <title>Portal Analisa Simple</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Font & FontAwesome Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- TradingView Lightweight Charts CDN -->
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0c0f16;
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #121824;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1f293d;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #374151;
+            background-color: #ffffff;
+            font-family: Arial, sans-serif;
         }
     </style>
 </head>
-<body class="text-gray-100 min-h-screen flex flex-col">
+<body class="flex flex-col items-center p-4">
 
-    <!-- Top Navigation Header -->
-    <header class="border-b border-gray-800 bg-[#0c0f16] px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 p-2.5 rounded-lg shadow-lg shadow-blue-500/20">
-                <i class="fa-solid fa-chart-line text-white text-lg"></i>
+    <!-- Container Utama Sesuai Gambar (1 Kolom Sederhana) -->
+    <div class="w-full max-w-[600px] flex flex-col gap-4">
+        
+        <!-- Area Grafik (Background Hitam) -->
+        <div class="border-2 border-gray-300 rounded overflow-hidden bg-black relative">
+            
+            <!-- Loading indicator -->
+            <div id="loading-overlay" class="absolute inset-0 bg-black/80 z-50 flex flex-col items-center justify-center gap-2 transition-opacity duration-300">
+                <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div class="text-xs text-gray-400">Loading data...</div>
             </div>
-            <div>
-                <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                    FOREX ANALYSIS PORTAL
-                </h1>
-                <p class="text-xs text-gray-400">Powered by Twelve Data API & Lightweight Charts</p>
-            </div>
+
+            <!-- Grafik Utama (Candlesticks, EMAs, Bollinger Bands) -->
+            <div id="main-chart" class="w-full h-[380px]"></div>
+            
+            <!-- Grafik Subwindow (Golden Cross & RSI Levels) -->
+            <div id="sub-chart" class="w-full h-[220px] border-t border-gray-800"></div>
         </div>
 
-        <!-- Controls for Pair and Timeframe Selection -->
-        <div class="flex flex-wrap items-center gap-3">
-            <!-- Pair Selector -->
-            <div class="flex bg-[#121824] p-1 rounded-lg border border-gray-800">
-                <button onclick="changePair('EUR/USD')" id="btn-eurusd" class="px-4 py-1.5 rounded-md text-xs font-semibold transition bg-blue-600 text-white shadow-md">
-                    EUR/USD
-                </button>
-                <button onclick="changePair('GBP/USD')" id="btn-gbpusd" class="px-4 py-1.5 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white">
-                    GBP/USD
-                </button>
-            </div>
-
-            <!-- Timeframe Selector -->
-            <div class="flex bg-[#121824] p-1 rounded-lg border border-gray-800">
-                <button onclick="changeTimeframe('30m')" id="btn-30m" class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white">
-                    M30
-                </button>
-                <button onclick="changeTimeframe('1h')" id="btn-1h" class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition bg-blue-600 text-white shadow-md">
-                    H1
-                </button>
-                <button onclick="changeTimeframe('4h')" id="btn-4h" class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white">
-                    H4
-                </button>
-            </div>
-
-            <!-- Refresh Button -->
-            <button onclick="fetchChartData()" class="p-2 bg-[#121824] hover:bg-gray-800 border border-gray-800 rounded-lg text-gray-400 hover:text-white transition" title="Refresh Data">
-                <i class="fa-solid fa-rotate"></i>
+        <!-- Baris Tombol Pertama -->
+        <div class="flex gap-3">
+            <button id="btn-eurusd" onclick="changePair('EUR/USD')" class="flex-1 py-3 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white leading-tight">
+                eur/<br>usd
+            </button>
+            <button id="btn-gbpusd" onclick="changePair('GBP/USD')" class="flex-1 py-3 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white leading-tight">
+                gbp/<br>usd
+            </button>
+            <button onclick="fetchChartData()" class="flex-[1.5] py-3 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white hover:bg-gray-100 transition">
+                refress api
             </button>
         </div>
-    </header>
 
-    <!-- Main Content Layout -->
-    <main class="flex-grow p-4 md:p-6 max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
-        
-        <!-- Left Column: Live Analytics & Signal Cards -->
-        <div class="lg:col-span-1 flex flex-col gap-6">
-            <!-- Market Overview Status Card -->
-            <div class="bg-[#121824] border border-gray-800 rounded-xl p-5 shadow-lg">
-                <h2 class="text-sm font-semibold text-gray-400 mb-4 flex items-center justify-between">
-                    <span>LIVE STATUS</span>
-                    <span class="flex h-2.5 w-2.5 relative">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                </h2>
-                
-                <div class="space-y-4">
-                    <div>
-                        <div class="text-xs text-gray-500">SELECTED INSTRUMENT</div>
-                        <div class="text-2xl font-bold text-white tracking-wider" id="lbl-active-pair">EUR/USD</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-gray-500">TIMEFRAME</div>
-                        <div class="text-lg font-semibold text-blue-400" id="lbl-active-tf">H1</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-gray-500">LAST UPDATED</div>
-                        <div class="text-xs font-mono text-gray-400" id="lbl-last-update">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Technical Trend Indicators Signal Summary -->
-            <div class="bg-[#121824] border border-gray-800 rounded-xl p-5 shadow-lg flex-grow space-y-5">
-                <h3 class="text-sm font-bold text-white border-b border-gray-800 pb-2">SUMMARY ANALISA</h3>
-                
-                <!-- Grid Ribbon Trend Status -->
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-400">Ribbon Trend (6 EMA)</span>
-                        <span id="ribbon-signal-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-400">NEUTRAL</span>
-                    </div>
-                    <p class="text-xs text-gray-400 leading-relaxed">
-                        Menganalisis momentum tren jangka pendek hingga menengah menggunakan 6 EMA (10-60).
-                    </p>
-                </div>
-
-                <!-- Golden Cross Status -->
-                <div class="space-y-2 pt-2 border-t border-gray-800/50">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-400">Golden Cross Sub (5,8,13)</span>
-                        <span id="goldencross-signal-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-400">NEUTRAL</span>
-                    </div>
-                    <p class="text-xs text-gray-400 leading-relaxed">
-                        Mengukur pergerakan cepat dan arah persilangan multi-EMA di subwindow chart.
-                    </p>
-                </div>
-
-                <!-- RSI Level Notification -->
-                <div class="space-y-2 pt-2 border-t border-gray-800/50">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-400">RSI Level (85, 50, 15)</span>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-900/40 text-blue-400">RSI ACTIVE</span>
-                    </div>
-                    <p class="text-xs text-gray-400 leading-relaxed">
-                        Melihat zona saturasi level 85, 50, dan 15 sesuai preferensi Anda. (Garis indikator RSI disembunyikan).
-                    </p>
-                </div>
-            </div>
+        <!-- Baris Tombol Kedua -->
+        <div class="flex gap-3">
+            <button id="btn-1h" onclick="changeTimeframe('1h')" class="flex-1 py-4 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white">
+                h1
+            </button>
+            <button id="btn-4h" onclick="changeTimeframe('4h')" class="flex-1 py-4 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white">
+                h4
+            </button>
+            <button id="btn-30m" onclick="changeTimeframe('30m')" class="flex-1 py-4 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white">
+                m30
+            </button>
         </div>
 
-        <!-- Right Column: Interactive Multi-pane Charts Container -->
-        <div class="lg:col-span-3 flex flex-col bg-[#121824] border border-gray-800 rounded-xl overflow-hidden relative shadow-xl min-h-[600px]">
-            
-            <!-- Loading overlay -->
-            <div id="loading-overlay" class="absolute inset-0 bg-[#121824]/90 z-50 flex flex-col items-center justify-center gap-4 transition-opacity duration-300">
-                <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <div class="text-sm font-medium text-gray-300">Memuat data pasar...</div>
-            </div>
-
-            <!-- Error banner -->
-            <div id="error-banner" class="hidden bg-red-900/80 border border-red-700 text-red-200 px-4 py-3 m-4 rounded-lg flex items-start gap-3 text-xs">
-                <i class="fa-solid fa-circle-exclamation text-base mt-0.5"></i>
-                <div>
-                    <span class="font-bold">Gagal mengambil data!</span> 
-                    <span id="error-message">Silakan tunggu 1 menit (Twelve Data free tier memiliki limitasi rate call).</span>
-                </div>
-            </div>
-
-            <!-- Chart Workspace -->
-            <div class="flex-grow flex flex-col p-4 gap-2">
-                <!-- Main Window Chart Container (Top) -->
-                <div class="w-full flex-grow relative">
-                    <div class="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur px-2.5 py-1 rounded text-[11px] font-mono border border-gray-800">
-                        <span class="text-white font-bold" id="lbl-chart-pair">EUR/USD</span>
-                        <span class="text-gray-400" id="lbl-chart-tf">H1</span>
-                        <span class="text-gray-500 font-bold ml-1">Grid Ribbon Trend (6 EMA)</span>
-                    </div>
-                    <div id="main-chart-wrapper" class="w-full h-[360px]"></div>
-                </div>
-
-                <!-- Separate Subwindow Chart Container (Bottom) -->
-                <div class="w-full h-[220px] relative border-t border-gray-800/50 pt-2">
-                    <div class="absolute top-3 left-2 z-10 bg-black/60 backdrop-blur px-2.5 py-1 rounded text-[11px] font-mono border border-gray-800">
-                        <span class="text-gray-400 font-bold">Subwindow:</span>
-                        <span class="text-gray-400">Golden Crose Sub (5,8,13)</span>
-                        <span class="text-gray-500 font-bold ml-1">& RSI Levels (85,50,15)</span>
-                    </div>
-                    <div id="sub-chart-wrapper" class="w-full h-full"></div>
-                </div>
-            </div>
+        <!-- Pesan Error (jika limit API tercapai) -->
+        <div id="error-message" class="hidden text-center text-xs text-red-600 font-bold mt-2 bg-red-50 p-2 rounded border border-red-200">
+            Koneksi API gagal. Mohon tunggu 1 menit sebelum me-refresh kembali.
         </div>
-    </main>
+    </div>
 
-    <!-- Footer -->
-    <footer class="bg-[#0c0f16] border-t border-gray-800 py-4 px-6 text-center text-xs text-gray-500">
-        &copy; 2026 Forex Programmer Portal. Dioptimalkan untuk GitHub Pages.
-    </footer>
-
-    <!-- Chart Configuration Script -->
+    <!-- Script Logika dan Visualisasi Grafik -->
     <script>
-        // API Configurations
         const API_KEY = "8cd5e84fa4564322b907aaddac29b059";
         let activePair = "EUR/USD";
-        let activeInterval = "1h"; // Twelve Data equivalent for H1
+        let activeInterval = "1h"; // Default H1
 
-        // Global Chart instances
         let mainChart, subChart;
-        let mainCandles, subDummyRsi;
+        let candlestickSeries;
+        let upperBBSeries, lowerBBSeries;
         let ribbonSeriesList = [];
         let gcSeriesList = [];
+        let rsiLevelDummy;
 
-        // Color definitions matching the MetaTrader template
         const COLOR_BUY = "#1E90FF";     // Dodger Blue
         const COLOR_SELL = "#FF1493";    // Deep Pink
-        const COLOR_NEUTRAL = "#A9A9A9"; // Gray
+        const COLOR_NEUTRAL = "#808080"; // Grey
 
-        // Initialize Charts when DOM is fully loaded
         document.addEventListener("DOMContentLoaded", () => {
             initCharts();
             fetchChartData();
         });
 
         function initCharts() {
-            const mainContainer = document.getElementById("main-chart-wrapper");
-            const subContainer = document.getElementById("sub-chart-wrapper");
+            const mainContainer = document.getElementById("main-chart");
+            const subContainer = document.getElementById("sub-chart");
 
-            // 1. Setup MAIN CHART
+            // Inisialisasi Grafik Utama
             mainChart = LightweightCharts.createChart(mainContainer, {
                 width: mainContainer.clientWidth,
                 height: mainContainer.clientHeight,
                 layout: {
                     background: { type: 'solid', color: '#000000' },
-                    textColor: '#D1D4DC',
-                    fontSize: 11,
+                    textColor: '#ffffff',
+                    fontSize: 10,
                 },
                 grid: {
-                    vertLines: { color: 'rgba(42, 46, 57, 0.15)' },
-                    horzLines: { color: 'rgba(42, 46, 57, 0.15)' },
-                },
-                crosshair: {
-                    mode: LightweightCharts.CrosshairMode.Normal,
+                    vertLines: { color: 'rgba(42, 46, 57, 0.1)' },
+                    horzLines: { color: 'rgba(42, 46, 57, 0.1)' },
                 },
                 rightPriceScale: {
-                    borderColor: '#2B2B43',
-                    minimumWidth: 70, // Ensures both vertical axes align exactly
+                    borderColor: '#333333',
+                    minimumWidth: 60,
                 },
                 timeScale: {
-                    borderColor: '#2B2B43',
+                    borderColor: '#333333',
                     timeVisible: true,
                 },
             });
 
-            // Add Candlestick Series to Main Chart
-            mainCandles = mainChart.addCandlestickSeries({
-                upColor: '#00FF00', // Lime Bullish
-                downColor: '#FF1493', // Pink Bearish
-                borderUpColor: '#ffffff',
-                borderDownColor: '#ffffff',
+            // Lilin model MT4 Green on Black
+            candlestickSeries = mainChart.addCandlestickSeries({
+                upColor: '#00FF00',      // Bullish body: hijau padat
+                downColor: '#000000',    // Bearish body: hitam
+                borderUpColor: '#00FF00',
+                borderDownColor: '#00FF00', // Garis tepi bearish: hijau
                 wickUpColor: '#00FF00',
-                wickDownColor: '#FF1493',
+                wickDownColor: '#00FF00',
             });
 
-            // Initialize 6 Line Series for Grid Ribbon EMAs (10, 20, 30, 40, 50, 60)
+            // Bollinger Bands (Upper & Lower)
+            upperBBSeries = mainChart.addLineSeries({
+                color: '#A9A9A9',
+                lineWidth: 1,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                priceLineVisible: false,
+            });
+            lowerBBSeries = mainChart.addLineSeries({
+                color: '#A9A9A9',
+                lineWidth: 1,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                priceLineVisible: false,
+            });
+
+            // 6 EMA Grid Ribbon
             const periods = [10, 20, 30, 40, 50, 60];
-            ribbonSeriesList = periods.map(p => {
+            ribbonSeriesList = periods.map(() => {
                 return mainChart.addLineSeries({
                     lineWidth: 2,
                     priceLineVisible: false,
-                    title: `EMA ${p}`,
                 });
             });
 
-            // 2. Setup SUBWINDOW CHART
+            // Inisialisasi Grafik Subwindow (Bawah)
             subChart = LightweightCharts.createChart(subContainer, {
                 width: subContainer.clientWidth,
                 height: subContainer.clientHeight,
                 layout: {
                     background: { type: 'solid', color: '#000000' },
-                    textColor: '#D1D4DC',
-                    fontSize: 11,
+                    textColor: '#ffffff',
+                    fontSize: 10,
                 },
                 grid: {
-                    vertLines: { color: 'rgba(42, 46, 57, 0.15)' },
-                    horzLines: { color: 'rgba(42, 46, 57, 0.15)' },
-                },
-                crosshair: {
-                    mode: LightweightCharts.CrosshairMode.Normal,
+                    vertLines: { color: 'rgba(42, 46, 57, 0.1)' },
+                    horzLines: { color: 'rgba(42, 46, 57, 0.1)' },
                 },
                 rightPriceScale: {
-                    borderColor: '#2B2B43',
-                    minimumWidth: 70, // Matches main chart's axis offset so candles align
+                    borderColor: '#333333',
+                    minimumWidth: 60,
                 },
                 leftPriceScale: {
-                    borderColor: '#2B2B43',
-                    visible: true, // Left axis will host RSI levels
+                    borderColor: '#333333',
+                    visible: true,
                 },
                 timeScale: {
-                    borderColor: '#2B2B43',
+                    borderColor: '#333333',
                     timeVisible: true,
                 },
             });
 
-            // Add EMA 5, 8, 13 Line Series on Right Axis of Sub-chart
+            // EMA 5, 8, 13 di Subwindow
             const subPeriods = [5, 8, 13];
-            gcSeriesList = subPeriods.map(p => {
+            gcSeriesList = subPeriods.map(() => {
                 return subChart.addLineSeries({
                     priceScaleId: 'right',
                     lineWidth: 2,
@@ -313,46 +187,24 @@
                 });
             });
 
-            // Create Left Axis dummy series representing RSI Levels (15, 50, 85)
-            subDummyRsi = subChart.addLineSeries({
+            // Skala Kiri Khusus RSI (Garis biru utama disembunyikan)
+            rsiLevelDummy = subChart.addLineSeries({
                 priceScaleId: 'left',
-                visible: false, // Hides the line plot completely as requested
+                visible: false, 
             });
 
-            // Configure Left axis parameters to lock RSI view within 0 to 100 range
             subChart.priceScale('left').applyOptions({
                 autoScale: false,
                 minPrice: 0,
                 maxPrice: 100,
             });
 
-            // Add horizontal level lines to the hidden RSI series
-            subDummyRsi.createPriceLine({
-                price: 85,
-                color: '#888888',
-                lineWidth: 1,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
-                axisLabelVisible: true,
-                title: '85',
-            });
-            subDummyRsi.createPriceLine({
-                price: 50,
-                color: '#555555',
-                lineWidth: 1,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
-                axisLabelVisible: true,
-                title: '50',
-            });
-            subDummyRsi.createPriceLine({
-                price: 15,
-                color: '#888888',
-                lineWidth: 1,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
-                axisLabelVisible: true,
-                title: '15',
-            });
+            // Level RSI: 85, 50, 15
+            rsiLevelDummy.createPriceLine({ price: 85, color: '#A9A9A9', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '85' });
+            rsiLevelDummy.createPriceLine({ price: 50, color: '#555555', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '50' });
+            rsiLevelDummy.createPriceLine({ price: 15, color: '#A9A9A9', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '15' });
 
-            // 3. SYNCHRONIZE BOTH PANES (Zooming and Panning Link)
+            // Sinkronisasi Zoom dan Pan antar grafik
             let isSyncing = false;
             mainChart.timeScale().subscribeVisibleTimeRangeChange(range => {
                 if (isSyncing) return;
@@ -367,186 +219,169 @@
                 isSyncing = false;
             });
 
-            // Synchronize crosshair positions across windows
-            mainChart.subscribeCrosshairMove(param => {
-                if (param.time) {
-                    subChart.setCrosshairPosition(0, param.time, subDummyRsi);
-                } else {
-                    subChart.clearCrosshairPosition();
-                }
-            });
-            subChart.subscribeCrosshairMove(param => {
-                if (param.time) {
-                    mainChart.setCrosshairPosition(0, param.time, mainCandles);
-                } else {
-                    mainChart.clearCrosshairPosition();
-                }
-            });
-
-            // Make sure charts resize cleanly if window width changes
+            // Resizing responsif
             window.addEventListener("resize", () => {
                 mainChart.resize(mainContainer.clientWidth, mainContainer.clientHeight);
                 subChart.resize(subContainer.clientWidth, subContainer.clientHeight);
             });
         }
 
-        // Action when User switches active instrument
         function changePair(pair) {
             activePair = pair;
-            document.getElementById("btn-eurusd").className = pair === "EUR/USD" ? "px-4 py-1.5 rounded-md text-xs font-semibold transition bg-blue-600 text-white shadow-md" : "px-4 py-1.5 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white";
-            document.getElementById("btn-gbpusd").className = pair === "GBP/USD" ? "px-4 py-1.5 rounded-md text-xs font-semibold transition bg-blue-600 text-white shadow-md" : "px-4 py-1.5 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white";
-            
-            document.getElementById("lbl-active-pair").innerText = pair;
-            document.getElementById("lbl-chart-pair").innerText = pair;
             fetchChartData();
         }
 
-        // Action when User switches active timeframe
         function changeTimeframe(tf) {
             activeInterval = tf;
-            document.getElementById("btn-30m").className = tf === "30m" ? "px-3.5 py-1.5 rounded-md text-xs font-semibold transition bg-blue-600 text-white shadow-md" : "px-3.5 py-1.5 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white";
-            document.getElementById("btn-1h").className = tf === "1h" ? "px-3.5 py-1.5 rounded-md text-xs font-semibold transition bg-blue-600 text-white shadow-md" : "px-3.5 py-1.5 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white";
-            document.getElementById("btn-4h").className = tf === "4h" ? "px-3.5 py-1.5 rounded-md text-xs font-semibold transition bg-blue-600 text-white shadow-md" : "px-3.5 py-1.5 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white";
-            
-            let label = tf === "30m" ? "M30" : tf === "1h" ? "H1" : "H4";
-            document.getElementById("lbl-active-tf").innerText = label;
-            document.getElementById("lbl-chart-tf").innerText = label;
             fetchChartData();
         }
 
-        // Main Market API fetching function
+        function updateButtonUI() {
+            // Reset status semua tombol menjadi outline putih-biru
+            const pairs = ['btn-eurusd', 'btn-gbpusd'];
+            pairs.forEach(id => {
+                document.getElementById(id).className = "flex-1 py-3 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white leading-tight";
+            });
+
+            const tfs = ['btn-1h', 'btn-4h', 'btn-30m'];
+            tfs.forEach(id => {
+                document.getElementById(id).className = "flex-1 py-4 border-[3px] border-blue-700 rounded text-blue-700 font-bold text-center text-xl bg-white";
+            });
+
+            // Aktifkan warna biru penuh untuk tombol terpilih
+            const activePairId = activePair === "EUR/USD" ? 'btn-eurusd' : 'btn-gbpusd';
+            document.getElementById(activePairId).className = "flex-1 py-3 border-[3px] border-blue-700 rounded text-white font-bold text-center text-xl bg-blue-700 leading-tight";
+
+            const activeTfId = activeInterval === "1h" ? 'btn-1h' : activeInterval === "4h" ? 'btn-4h' : 'btn-30m';
+            document.getElementById(activeTfId).className = "flex-1 py-4 border-[3px] border-blue-700 rounded text-white font-bold text-center text-xl bg-blue-700";
+        }
+
         async function fetchChartData() {
             showLoading(true);
             hideError();
+            updateButtonUI();
 
-            const url = `https://api.twelvedata.com/time_series?symbol=${activePair}&interval=${activeInterval}&apikey=${API_KEY}&outputsize=150`;
+            const url = `https://api.twelvedata.com/time_series?symbol=${activePair}&interval=${activeInterval}&apikey=${API_KEY}&outputsize=100`;
 
             try {
                 const response = await fetch(url);
                 const result = await response.json();
 
                 if (result.status !== "ok") {
-                    throw new Error(result.message || "Gagal mendapatkan respon valid.");
+                    throw new Error(result.message || "Gagal mendapatkan data.");
                 }
 
-                // Parse and prepare candlestick data sorted chronologically
                 const rawValues = result.values.reverse();
-                const processedCandles = rawValues.map(v => {
-                    return {
-                        time: parseDateTimeToUnix(v.datetime),
-                        open: parseFloat(v.open),
-                        high: parseFloat(v.high),
-                        low: parseFloat(v.low),
-                        close: parseFloat(v.close)
-                    };
-                });
+                const data = rawValues.map(v => ({
+                    time: parseDate(v.datetime),
+                    open: parseFloat(v.open),
+                    high: parseFloat(v.high),
+                    low: parseFloat(v.low),
+                    close: parseFloat(v.close)
+                }));
 
-                // Apply Candlestick series
-                mainCandles.setData(processedCandles);
+                // Set Lilin ke chart
+                candlestickSeries.setData(data);
 
-                // Populate dummy RSI series with central value to maintain chart bounds
-                subDummyRsi.setData(processedCandles.map(c => ({ time: c.time, value: 50 })));
+                // Set Dummy RSI agar level garis terplot di subwindow
+                rsiLevelDummy.setData(data.map(d => ({ time: d.time, value: 50 })));
 
-                // 4. Calculate Indicators
-                // A. Grid Ribbon 6 EMA (10, 20, 30, 40, 50, 60)
+                // 1. Hitung Bollinger Bands (20, 2)
+                const bb = calculateBollingerBands(data, 20, 2);
+                upperBBSeries.setData(bb.upper);
+                lowerBBSeries.setData(bb.lower);
+
+                // 2. Hitung & Plot Grid Ribbon 6 EMA (10, 20, 30, 40, 50, 60)
                 const ribbonPeriods = [10, 20, 30, 40, 50, 60];
-                let latestRibbonSignals = [];
-
                 ribbonPeriods.forEach((p, idx) => {
-                    const emaValues = calculateEMA(processedCandles, p);
-                    const lineData = [];
+                    const ema = calculateEMA(data, p);
+                    const plotData = [];
 
-                    for (let i = 1; i < processedCandles.length; i++) {
-                        if (emaValues[i] === null || emaValues[i-1] === null) continue;
+                    for (let i = 1; i < data.length; i++) {
+                        if (ema[i] === null || ema[i-1] === null) continue;
 
-                        const curClose = processedCandles[i].close;
-                        const val = emaValues[i];
-                        const valPrev = emaValues[i-1];
-
-                        // MQL4 Logic: Buy (close > EMA & EMA naik), Sell (close < EMA & EMA turun)
                         let color = COLOR_NEUTRAL;
-                        if (curClose > val && val > valPrev) {
+                        if (data[i].close > ema[i] && ema[i] > ema[i-1]) {
                             color = COLOR_BUY;
-                        } else if (curClose < val && val < valPrev) {
+                        } else if (data[i].close < ema[i] && ema[i] < ema[i-1]) {
                             color = COLOR_SELL;
                         }
 
-                        lineData.push({
-                            time: processedCandles[i].time,
-                            value: val,
-                            color: color // Colored segment in TV charts
+                        plotData.push({
+                            time: data[i].time,
+                            value: ema[i],
+                            color: color
                         });
                     }
-
-                    ribbonSeriesList[idx].setData(lineData);
-
-                    // Track latest active signal for status card summary
-                    if (lineData.length > 0) {
-                        latestRibbonSignals.push(lineData[lineData.length - 1].color);
-                    }
+                    ribbonSeriesList[idx].setData(plotData);
                 });
 
-                // Calculate final Ribbon trend summary
-                updateRibbonBadge(latestRibbonSignals);
-
-                // B. Golden Cross Sub (5, 8, 13)
-                const ema5 = calculateEMA(processedCandles, 5);
-                const ema8 = calculateEMA(processedCandles, 8);
-                const ema13 = calculateEMA(processedCandles, 13);
+                // 3. Hitung & Plot Golden Cross Sub (5, 8, 13)
+                const ema5 = calculateEMA(data, 5);
+                const ema8 = calculateEMA(data, 8);
+                const ema13 = calculateEMA(data, 13);
 
                 const gc5 = [], gc8 = [], gc13 = [];
-                let lastGCState = "NEUTRAL";
 
-                for (let i = 1; i < processedCandles.length; i++) {
+                for (let i = 1; i < data.length; i++) {
                     if (ema13[i] === null || ema13[i-1] === null) continue;
 
-                    // MQL4 Logic: state 1 (Buy: ema5 > ema8 > ema13), state 2 (Sell: ema5 < ema8 < ema13)
-                    let state = 0; // Neutral
-                    if (ema5[i] > ema8[i] && ema8[i] > ema13[i]) {
-                        state = 1; // Bullish
-                    } else if (ema5[i] < ema8[i] && ema8[i] < ema13[i]) {
-                        state = 2; // Bearish
-                    }
-
                     let color = COLOR_NEUTRAL;
-                    if (state === 1) {
+                    if (ema5[i] > ema8[i] && ema8[i] > ema13[i]) {
                         color = COLOR_BUY;
-                        if (i === processedCandles.length - 1) lastGCState = "BUY";
-                    } else if (state === 2) {
+                    } else if (ema5[i] < ema8[i] && ema8[i] < ema13[i]) {
                         color = COLOR_SELL;
-                        if (i === processedCandles.length - 1) lastGCState = "SELL";
                     }
 
-                    gc5.push({ time: processedCandles[i].time, value: ema5[i], color: color });
-                    gc8.push({ time: processedCandles[i].time, value: ema8[i], color: color });
-                    gc13.push({ time: processedCandles[i].time, value: ema13[i], color: color });
+                    gc5.push({ time: data[i].time, value: ema5[i], color: color });
+                    gc8.push({ time: data[i].time, value: ema8[i], color: color });
+                    gc13.push({ time: data[i].time, value: ema13[i], color: color });
                 }
 
                 gcSeriesList[0].setData(gc5);
                 gcSeriesList[1].setData(gc8);
                 gcSeriesList[2].setData(gc13);
 
-                updateGoldenCrossBadge(lastGCState);
-
-                // Auto fit time series range beautifully on viewports
                 mainChart.timeScale().fitContent();
 
-                // Update updated label timestamp
-                document.getElementById("lbl-last-update").innerText = new Date().toLocaleTimeString();
-
             } catch (err) {
-                showError(err.message);
+                showError();
             } finally {
                 showLoading(false);
             }
         }
 
-        // EMA Calculation function (Exponential Moving Average)
+        // Kalkulasi Bollinger Bands
+        function calculateBollingerBands(data, period, multiplier) {
+            const upper = [];
+            const lower = [];
+
+            for (let i = 0; i < data.length; i++) {
+                if (i < period - 1) continue;
+
+                let sum = 0;
+                for (let j = i - period + 1; j <= i; j++) {
+                    sum += data[j].close;
+                }
+                const sma = sum / period;
+
+                let sumDiffSq = 0;
+                for (let j = i - period + 1; j <= i; j++) {
+                    sumDiffSq += Math.pow(data[j].close - sma, 2);
+                }
+                const stdDev = Math.sqrt(sumDiffSq / period);
+
+                upper.push({ time: data[i].time, value: sma + (multiplier * stdDev) });
+                lower.push({ time: data[i].time, value: sma - (multiplier * stdDev) });
+            }
+            return { upper, lower };
+        }
+
+        // Kalkulasi EMA
         function calculateEMA(data, period) {
             const ema = Array(data.length).fill(null);
             if (data.length < period) return ema;
 
-            // Simple average initialization (SMA) for initial index
             let sum = 0;
             for (let i = 0; i < period; i++) {
                 sum += data[i].close;
@@ -563,8 +398,7 @@
             return ema;
         }
 
-        // Helper timezone translation tool
-        function parseDateTimeToUnix(str) {
+        function parseDate(str) {
             const parts = str.split(' ');
             const dateParts = parts[0].split('-');
             const timeParts = parts[1].split(':');
@@ -578,59 +412,16 @@
             ) / 1000;
         }
 
-        // Live badge helper updates
-        function updateRibbonBadge(signals) {
-            const badge = document.getElementById("ribbon-signal-badge");
-            const buyCount = signals.filter(s => s === COLOR_BUY).length;
-            const sellCount = signals.filter(s => s === COLOR_SELL).length;
-
-            if (buyCount >= 4) {
-                badge.innerText = "BULLISH";
-                badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-400";
-            } else if (sellCount >= 4) {
-                badge.innerText = "BEARISH";
-                badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-950/80 text-rose-400";
-            } else {
-                badge.innerText = "NEUTRAL";
-                badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-400";
-            }
-        }
-
-        function updateGoldenCrossBadge(state) {
-            const badge = document.getElementById("goldencross-signal-badge");
-            if (state === "BUY") {
-                badge.innerText = "BULLISH";
-                badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-400";
-            } else if (state === "SELL") {
-                badge.innerText = "BEARISH";
-                badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-950/80 text-rose-400";
-            } else {
-                badge.innerText = "NEUTRAL";
-                badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-400";
-            }
-        }
-
-        // Loading and error states toggle helpers
         function showLoading(visible) {
-            const overlay = document.getElementById("loading-overlay");
-            if (visible) {
-                overlay.style.opacity = "1";
-                overlay.style.pointerEvents = "auto";
-            } else {
-                overlay.style.opacity = "0";
-                overlay.style.pointerEvents = "none";
-            }
+            document.getElementById("loading-overlay").style.display = visible ? "flex" : "none";
         }
 
-        function showError(msg) {
-            const banner = document.getElementById("error-banner");
-            const text = document.getElementById("error-message");
-            text.innerText = msg || "Terjadi kesalahan pengambilan data dari server Twelve Data.";
-            banner.classList.remove("hidden");
+        function showError() {
+            document.getElementById("error-message").classList.remove("hidden");
         }
 
         function hideError() {
-            document.getElementById("error-banner").classList.add("hidden");
+            document.getElementById("error-message").classList.add("hidden");
         }
     </script>
 </body>
