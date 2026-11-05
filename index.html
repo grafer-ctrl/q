@@ -34,6 +34,7 @@ canvas{width:100%;border-radius:18px;background:#000;display:block;box-shadow:0 
 .tag{font-size:12px;color:var(--mu)}
 .alert-box{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;padding:8px 10px;border-radius:8px;font-size:11px;margin:8px 0;line-height:1.4}
 .alert-box.ok{background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.3);color:#4ade80}
+.alert-box.err{background:rgba(225,29,72,0.12);border-color:rgba(225,29,72,0.4);color:#fb7185}
 .panel-sub{background:#131522;border:1px solid var(--bd);border-radius:12px;padding:10px;margin-top:10px}
 input[type=range]{accent-color:var(--ac);width:100%;cursor:pointer}
 .progress-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;color:#fff;text-align:center;padding:24px}
@@ -178,8 +179,8 @@ FOMO beli barang diskon padahal gak butuh</textarea>
 
     <label><input type="checkbox" id="tts" checked> Putar suara narator otomatis</label>
     
-    <div class="alert-box ok">
-      ✅ <b>Audio otomatis terekam!</b> Narasi menggunakan Puter TTS, tidak perlu lagi pengaturan "berbagi audio tab".
+    <div class="alert-box ok" id="tipBox">
+      ✅ <b>Audio otomatis terekam!</b> Narasi menggunakan Puter TTS, tidak perlu pengaturan "berbagi audio tab".
     </div>
     
     <div class="tag" id="st" style="font-weight:bold;margin-top:6px;color:#a78bfa">Status: Siap.</div>
@@ -194,6 +195,7 @@ FOMO beli barang diskon padahal gak butuh</textarea>
 </div>
 
 <script>
+/* ========== GLOBAL ========== */
 const GRADIENTS = [
   ["#1e1b4b", "#431407"],
   ["#0f172a", "#1e3a8a"],
@@ -204,6 +206,7 @@ const GRADIENTS = [
 
 let S=[], i=0, bgm=null, AC, MD, G, run=null;
 let mediaRec=null, micChunks=[];
+let activeSources = []; // menahan referensi AudioBufferSource agar tidak di-GC
 
 const cv=document.getElementById('cv'), c=cv.getContext('2d'), $=id=>document.getElementById(id);
 
@@ -429,8 +432,10 @@ function initAudio(){
   AC=new (window.AudioContext||window.webkitAudioContext)();
   MD=AC.createMediaStreamDestination();
   G=AC.createGain();
-  G.connect(AC.destination);
-  G.connect(MD);   // ← kunci: semua audio yang lewat G masuk ke stream export
+  G.gain.value = 1.0;
+  G.connect(AC.destination); // ke speaker (supaya user dengar)
+  G.connect(MD);             // ← ke stream export (kunci rekaman)
+  console.log('[Audio] AudioContext siap. MD tracks:', MD.stream.getAudioTracks().length);
 }
 
 async function dec(f){initAudio();return AC.decodeAudioData(await f.arrayBuffer())}
@@ -494,47 +499,67 @@ function src(buf,vol,loop){
   n.buffer=buf; n.loop=!!loop; g.gain.value=vol;
   n.connect(g).connect(G);
   n.start();
+  activeSources.push(n); // tahan referensi
+  n.onended = () => { activeSources = activeSources.filter(s => s !== n); };
   return n;
 }
 
 function stop(){
   if(run){run.stop=true}
   if('speechSynthesis' in window) speechSynthesis.cancel();
+  activeSources.forEach(s => { try{ s.stop() }catch(e){} });
+  activeSources = [];
 }
 
-/* ================= PUTER TTS (menggantikan speechSynthesis) ================= */
+/* ================= PUTER TTS ================= */
 async function speakWithPuter(text, onEnd){
+  if(!text){ if(onEnd) onEnd(); return; }
   try {
     const voiceId = $('voice').value || 'nova';
-    const audioEl = await putterTTS(text, voiceId);
-    if(!audioEl){ if(onEnd) onEnd(); return; }
+    console.log('[TTS] request:', text.slice(0,60), '| voice:', voiceId);
 
-    const resp = await fetch(audioEl.src);
-    const arrayBuf = await resp.arrayBuffer();
-    const audioBuf = await AC.decodeAudioData(arrayBuf);
+    if(typeof puter === 'undefined' || !puter.ai || !puter.ai.txt2speech){
+      throw new Error('Puter.js tidak dimuat. Cek <script src="https://js.puter.com/v2/">');
+    }
 
-    const source = AC.createBufferSource();
-    source.buffer = audioBuf;
-    source.connect(G);   // G sudah terhubung ke speaker & MD
-    source.start();
+    const audioEl = await puter.ai.txt2speech(text, {
+      provider: 'openai',
+      voice: voiceId,
+      model: 'gpt-4o-mini-tts'
+    });
+    if(!audioEl || !audioEl.src) throw new Error('TTS tidak mengembalikan audio');
+    console.log('[TTS] src:', audioEl.src.slice(0,80));
 
-    if (onEnd) source.onended = onEnd;
+    // Coba decode via fetch (cara paling bersih: masuk ke AudioGraph)
+    try{
+      const resp = await fetch(audioEl.src);
+      const arrayBuf = await resp.arrayBuffer();
+      const audioBuf = await AC.decodeAudioData(arrayBuf);
+      console.log('[TTS] decoded duration:', audioBuf.duration.toFixed(2), 's');
+
+      const source = AC.createBufferSource();
+      source.buffer = audioBuf;
+      source.connect(G); // G → speaker + MD (rekam)
+      source.start();
+      activeSources.push(source);
+      source.onended = () => {
+        activeSources = activeSources.filter(s => s !== source);
+        console.log('[TTS] ended');
+        if(onEnd) onEnd();
+      };
+    } catch(decodeErr){
+      // Fallback: mainkan via HTMLAudioElement (TIDAK masuk rekaman, tapi setidaknya user dengar)
+      console.warn('[TTS] decode gagal, fallback ke HTMLAudioElement:', decodeErr);
+      audioEl.onended = () => { if(onEnd) onEnd(); };
+      audioEl.play().catch(() => { if(onEnd) onEnd(); });
+    }
   } catch (err) {
-    console.error('Puter TTS gagal:', err);
+    console.error('[TTS] error:', err);
     if (onEnd) onEnd();
   }
 }
 
-/* wrapper agar nama fungsi lebih jelas */
-async function putterTTS(text, voice){
-  return await puter.ai.txt2speech(text, {
-    provider: 'openai',
-    voice: voice,
-    model: 'gpt-4o-mini-tts',
-    response_format: 'mp3'
-  });
-}
-
+/* ================= MIME ================= */
 function getSupportedMime(){
   const list = [
     'video/mp4;codecs=avc1,mp4a.40.2',
@@ -551,6 +576,7 @@ function getSupportedMime(){
   return '';
 }
 
+/* ================= MODAL ================= */
 function showModal(text, sub){
   $('modalText').textContent = text || '';
   $('modalSub').textContent = sub || '';
@@ -562,8 +588,12 @@ function hideModal(){ $('modal').classList.remove('show'); }
 async function play(rec){
   stop();
   await new Promise(r=>setTimeout(r,80));
-  await initAudio();
-  await AC.resume();
+  initAudio();
+
+  // Browser modern suspend AudioContext; resume setelah user gesture
+  if(AC.state === 'suspended') await AC.resume();
+  console.log('[Play] AC state:', AC.state, '| MD tracks:', MD.stream.getAudioTracks().length);
+
   await document.fonts.load('800 40px "Baloo 2"').catch(()=>{});
 
   const me = run = {stop:false};
@@ -572,8 +602,16 @@ async function play(rec){
 
   if(rec){
     const st = cv.captureStream(30);
-    // Selalu pakai MD: BGM + buffer + Puter TTS semuanya lewat G → MD
-    MD.stream.getAudioTracks().forEach(t => st.addTrack(t));
+
+    // ⚠️ KRITIS: pastikan MD punya audio track sebelum add ke stream
+    const audioTracks = MD.stream.getAudioTracks();
+    if(audioTracks.length === 0){
+      run = null;
+      alert('❌ AudioContext tidak menghasilkan audio track. Coba refresh halaman.');
+      return;
+    }
+    audioTracks.forEach(t => st.addTrack(t));
+    console.log('[Rec] stream tracks — video:', st.getVideoTracks().length, 'audio:', st.getAudioTracks().length);
 
     mime = getSupportedMime();
     if(!mime){
@@ -581,6 +619,7 @@ async function play(rec){
       alert('Browser tidak mendukung MediaRecorder MP4/WebM.');
       return;
     }
+    console.log('[Rec] mime:', mime);
 
     try {
       mr = new MediaRecorder(st, {
@@ -589,6 +628,7 @@ async function play(rec){
         audioBitsPerSecond: 128000
       });
     } catch(e){
+      console.warn('[Rec] gagal pakai opsi lengkap, fallback:', e);
       mr = new MediaRecorder(st, { videoBitsPerSecond: 8000000 });
     }
     mr.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
@@ -604,15 +644,26 @@ async function play(rec){
     ren();
 
     const cs = s.buf ? src(s.buf, 1) : null;
-    let spDone = true, spT = 0;
+    let spDone = true, spT = 0, ttsDuration = 0;
 
-    // Jika slide tidak punya audio buffer, pakai Puter TTS
     if(!s.buf && say){
       spDone = false;
-      await speakWithPuter(s.text, () => {
-        spDone = true;
-        spT = performance.now();
+      // Tunggu TTS selesai (karena kita perlu tahu durasi TTS untuk memperpanjang slide)
+      await new Promise(resolve => {
+        speakWithPuter(s.text, () => { spDone = true; spT = performance.now(); resolve(); });
+        // safety timeout: maksimal 20 detik per TTS
+        setTimeout(() => { if(!spDone){ spDone = true; spT = performance.now(); resolve(); } }, 20000);
       });
+      // Setelah TTS dimulai, kita perlu memperpanjang durasi slide jika TTS lebih panjang
+      // Ambil sisa waktu dari audio buffer TTS yang aktif (jika ada)
+      const lastSource = activeSources[activeSources.length - 1];
+      if(lastSource && lastSource.buffer){
+        ttsDuration = lastSource.buffer.duration;
+        if(ttsDuration > s.dur){
+          s.dur = Math.ceil(ttsDuration + 0.6); // +0.6s jeda
+          console.log(`[Slide ${k+1}] durasi diperpanjang ke ${s.dur}s untuk narasi`);
+        }
+      }
     }
 
     const t0 = performance.now();
@@ -649,11 +700,14 @@ async function play(rec){
     const isMp4 = mime.includes('mp4');
     const ext = isMp4 ? 'mp4' : 'webm';
     const blob = new Blob(chunks, { type: mime || 'video/webm' });
+    console.log('[Rec] hasil blob:', blob.size, 'bytes | mime:', mime);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `kuis_fullscreen_${Date.now()}.${ext}`;
     a.click();
     $('st').textContent = `✅ Berhasil! Video ${ext.toUpperCase()} tersimpan.`;
+    $('tipBox').className = 'alert-box ok';
+    $('tipBox').innerHTML = `✅ <b>Video berhasil dibuat!</b><br>File: kuis_fullscreen_*.${ext} (${(blob.size/1024/1024).toFixed(1)} MB)`;
   } else {
     $('st').textContent = 'Pemutaran selesai.';
     ren();
