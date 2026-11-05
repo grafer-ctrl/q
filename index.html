@@ -1,715 +1,666 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analisa Teknikal RSI & Golden Cross</title>
-  <style>
-    :root {
-      --bg-color: #0b0c10;
-      --card-bg: #15161b;
-      --text-main: #ffffff;
-      --text-muted: #888888;
-      --mt-green: #00bc3f;
-      --chart-bg: #000000;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      font-family: 'Courier New', Courier, monospace, sans-serif;
-      padding: 20px 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 800px;
-      background-color: var(--card-bg);
-      border: 1px solid #333;
-      border-radius: 4px;
-      padding: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    }
-
-    header {
-      margin-bottom: 15px;
-      border-bottom: 1px dashed #444;
-      padding-bottom: 10px;
-    }
-
-    h1 {
-      font-size: 1.3rem;
-      color: var(--mt-green);
-      text-transform: uppercase;
-      margin-bottom: 5px;
-    }
-
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 5px;
-    }
-
-    .status-badge {
-      font-weight: bold;
-    }
-
-    .status-live {
-      color: #00ff00;
-    }
-
-    .status-demo {
-      color: #ffaa00;
-    }
-
-    .chart-container {
-      position: relative;
-      background-color: var(--chart-bg);
-      border: 2px solid #222;
-      margin-bottom: 20px;
-      width: 100%;
-      height: 520px;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    .button-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: space-between;
-      margin-top: 10px;
-    }
-
-    .btn-mql {
-      background-color: #ffffff;
-      color: #000000;
-      border: 3px solid #000000;
-      font-weight: 900;
-      font-size: 13px;
-      padding: 8px 15px;
-      cursor: pointer;
-      text-transform: uppercase;
-      flex: 1;
-      min-width: 120px;
-      text-align: center;
-      transition: all 0.15s ease-in-out;
-    }
-
-    .btn-mql:hover {
-      background-color: var(--mt-green);
-      color: #ffffff;
-    }
-
-    .btn-mql.active {
-      background-color: var(--mt-green);
-      color: #ffffff;
-    }
-
-    .signal-box {
-      background: #20222a;
-      border-left: 4px solid var(--mt-green);
-      padding: 10px;
-      margin-bottom: 15px;
-      font-size: 0.9rem;
-    }
-
-    .signal-text {
-      font-weight: bold;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>9:16 Fullscreen Video Slide Generator (Puter TTS)</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+<script src="https://js.puter.com/v2/"></script>
+<style>
+:root{color-scheme:light;--bg:#0f111a;--card:#181b29;--tx:#f1eeff;--mu:#9493a8;--ac:#8b5cf6;--ac-hover:#7c3aed;--bd:#282b3d;box-sizing:border-box}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Baloo 2",system-ui,sans-serif;font-size:14px}
+h1{margin:0;font-size:22px;color:#fff}h2{margin:0 0 8px;font-size:16px;color:#ddd}
+.wrap{max-width:1150px;margin:auto;padding:16px;display:grid;grid-template-columns:1fr 360px;gap:16px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,0.25)}
+textarea,input[type=text],input[type=number],input[type=color],select{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--bd);background:#121420;color:var(--tx);font:inherit}
+textarea{resize:vertical}
+label{display:block;font-size:12px;color:var(--mu);margin:8px 0 3px;font-weight:600}
+button,.btn{background:var(--ac);color:#fff;border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:0.15s}
+button:hover,.btn:hover{background:var(--ac-hover)}
+button.g,.btn.g{background:transparent;color:#c4b5fd;border:1px solid var(--bd)}
+button.g:hover,.btn.g:hover{background:#23273c;border-color:var(--ac)}
+button.r{background:#e11d48}button.r:hover{background:#be123c}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.slides{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.mini{flex:0 0 65px;height:115px;border:2px solid var(--bd);border-radius:10px;background:#0c0d14;text-align:center;cursor:pointer;overflow:hidden;position:relative;transition:0.2s}
+.mini.on{border-color:var(--ac);box-shadow:0 0 0 3px rgba(139,92,246,0.5)}
+.mini img{width:100%;height:100%;object-fit:cover}
+.mini .mini-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px}
+.mini small{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.75);font-size:8px;line-height:1.1;padding:2px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+canvas{width:100%;border-radius:18px;background:#000;display:block;box-shadow:0 12px 30px rgba(0,0,0,0.5)}
+.sticky{position:sticky;top:10px}
+.tag{font-size:12px;color:var(--mu)}
+.alert-box{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;padding:8px 10px;border-radius:8px;font-size:11px;margin:8px 0;line-height:1.4}
+.alert-box.ok{background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.3);color:#4ade80}
+.panel-sub{background:#131522;border:1px solid var(--bd);border-radius:12px;padding:10px;margin-top:10px}
+input[type=range]{accent-color:var(--ac);width:100%;cursor:pointer}
+.progress-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;color:#fff;text-align:center;padding:24px}
+.progress-modal.show{display:flex}
+.progress-modal .spinner{width:60px;height:60px;border:5px solid rgba(139,92,246,0.3);border-top-color:#8b5cf6;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
+<div class="wrap">
+<div>
+  <h1>📱 9:16 Fullscreen Quiz Generator</h1>
+  <p class="tag">Gambar full 1 layar vertikal + teks overlay sinematik + narator suara Bahasa Indonesia via Puter.js (Export MP4 dengan audio otomatis).</p>
 
-  <div class="container">
-    <header>
-      <h1>MQL4 Technical Suite</h1>
-      <div class="status-bar">
-        <div>Asset: <span id="current-asset" style="color: #fff;">EUR/USD</span> (<span id="current-tf">H1</span>)</div>
-        <div>Sumber Data: <span id="data-status" class="status-badge status-live">Menghubungkan...</span></div>
+  <div class="box">
+    <h2>1. Data Kuis</h2>
+    <label>Pertanyaan</label>
+    <input type="text" id="q" value="Di antara kebiasaan ini, mana yang paling bikin boros dompet?">
+    <label>Pilihan Jawaban (Satu baris satu pilihan)</label>
+    <textarea id="opts" rows="4">Checkout keranjang belanja pas tengah malam
+Beli kopi kekinian tiap hari biar melek
+Jajan online karena males masak di rumah
+FOMO beli barang diskon padahal gak butuh</textarea>
+    <label>Slide Penutup</label>
+    <input type="text" id="cta" value="Kalau kamu nomor berapa? Tulis alasanmu di komentar!">
+
+    <div class="row" style="margin-top:10px">
+      <div style="flex:1;min-width:140px">
+        <label style="margin:0 0 4px">Gaya Kotak Teks Overlay</label>
+        <select id="boxStyle">
+          <option value="banner">TikTok Subtitle Banner (Hitam)</option>
+          <option value="glass">Modern Frosted Glass (Kaca)</option>
+          <option value="card">Kartu Bawah Elegan</option>
+          <option value="outline">Teks Bold Berbayang (Tanpa Kotak)</option>
+        </select>
       </div>
-    </header>
-
-    <div class="signal-box">
-      <span>Status Tren Terakhir: </span>
-      <span id="signal-state" class="signal-text">Memproses...</span>
-    </div>
-
-    <div class="chart-container">
-      <canvas id="forexChart"></canvas>
-    </div>
-
-    <div class="button-container">
-      <button id="btn-eur" class="btn-mql active" onclick="changeSymbol('EUR/USD')">EUR/USD</button>
-      <button id="btn-gbp" class="btn-mql" onclick="changeSymbol('GBP/USD')">GBP/USD</button>
-      <button id="btn-tf" class="btn-mql" onclick="toggleTimeframe()">H1</button>
-      <button id="btn-refresh" class="btn-mql" onclick="fetchData()">REFRES API</button>
+      <div style="flex:1;min-width:140px">
+        <label style="margin:0 0 4px">Posisi Teks di Layar</label>
+        <select id="textPos">
+          <option value="bottom">Di Bagian Bawah Layar</option>
+          <option value="center" selected>Di Tengah Layar</option>
+          <option value="top">Di Bagian Atas Layar</option>
+        </select>
+      </div>
+      <div style="align-self:flex-end">
+        <button onclick="gen()">✨ Generate Slide</button>
+      </div>
     </div>
   </div>
 
-  <script>
-    const apiKey = '68c36795a75a4b9c99e8ea500b7e5937';
-    let currentSymbol = 'EUR/USD';
-    let currentInterval = '1h'; // default mapping dari H1
-    let rawCandles = [];
+  <div class="box">
+    <h2>2. Urutan Slide (9:16)</h2>
+    <div class="slides" id="list"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="g" onclick="addS()">+ Slide</button>
+      <button class="g" onclick="dup()">Duplikat</button>
+      <button class="g" onclick="del()">Hapus</button>
+      <button class="g" onclick="mv(-1)">◀ Geser Kiri</button>
+      <button class="g" onclick="mv(1)">Geser Kanan ▶</button>
+    </div>
+  </div>
+
+  <div class="box" id="ed">
+    <h2>3. Edit Slide Terpilih</h2>
+    <label>Teks</label>
+    <textarea id="t" rows="2" oninput="if(cur()){cur().text=this.value;ren();}"></textarea>
     
-    // Timeframe rotasi
-    const timeframes = [
-      { display: 'H1', value: '1h' },
-      { display: 'H4', value: '4h' },
-      { display: 'D1', value: '1day' },
-      { display: 'M15', value: '15min' },
-      { display: 'M30', value: '30min' }
-    ];
-    let currentTfIndex = 0;
+    <div class="row">
+      <div style="flex:1">
+        <label>Badge Label (Contoh: PILIHAN A, PERTANYAAN)</label>
+        <input type="text" id="lb" oninput="if(cur()){cur().label=this.value;ren();}">
+      </div>
+      <div style="flex:1">
+        <label>Durasi Slide (Detik)</label>
+        <input type="number" id="du" min="1" max="30" step="0.5" oninput="if(cur()){cur().dur=+this.value;ren();}">
+      </div>
+    </div>
 
-    // Parameter Teknis
-    const InpBandsPeriod = 20;
-    const InpBandsDeviations = 2.0;
-    const FastPeriod = 5;
-    const MediumPeriod = 8;
-    const SlowPeriod = 13;
-    const InpRSIPeriod = 14;
+    <div class="panel-sub">
+      <div style="font-weight:bold;color:#a78bfa;margin-bottom:6px">🖼️ Gambar Latar Penuh (Full 9:16)</div>
+      <div class="row">
+        <label class="btn" style="margin:0">
+          📁 Upload Gambar 9:16
+          <input type="file" accept="image/*" hidden onchange="upImg(this)">
+        </label>
+        <button class="g" type="button" onclick="applyImgToAll()">🔁 Terapkan ke Semua Slide</button>
+        <button class="g" type="button" onclick="if(cur()){cur().img=null;ren();}">Hapus Gambar</button>
+      </div>
+      <small class="tag" style="display:block;margin-top:5px">Gambar otomatis mengisi 1 layar penuh (cover). Format portrait/vertikal memberi hasil terbaik.</small>
+    </div>
 
-    function changeSymbol(symbol) {
-      currentSymbol = symbol;
-      document.getElementById('btn-eur').classList.toggle('active', symbol === 'EUR/USD');
-      document.getElementById('btn-gbp').classList.toggle('active', symbol === 'GBP/USD');
-      document.getElementById('current-asset').innerText = symbol;
-      fetchData();
+    <div class="panel-sub">
+      <div style="font-weight:bold;color:#a78bfa;margin-bottom:6px">🎛️ Penyesuaian Posisi & Ukuran Teks</div>
+      <div class="row">
+        <div style="flex:1;min-width:140px">
+          <label style="margin:0 0 2px">Ukuran Font (<b id="fsVal">Auto</b>)</label>
+          <div class="row" style="gap:4px">
+            <input type="range" id="fsRange" min="24" max="72" value="46" oninput="onFontSizeInput(this.value)" style="flex:1">
+            <button type="button" class="g" style="padding:2px 8px;font-size:11px" onclick="resetFontSize()">Auto</button>
+          </div>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label style="margin:0 0 2px">Geser Posisi Y (<b id="tyVal">0 px</b>)</label>
+          <div class="row" style="gap:4px">
+            <input type="range" id="tyRange" min="-300" max="300" value="0" oninput="onTextOffsetInput(this.value)" style="flex:1">
+            <button type="button" class="g" style="padding:2px 8px;font-size:11px" onclick="resetTextOffset()">0</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <label class="btn g" style="margin:0">🔊 Upload Audio Khusus<input type="file" accept="audio/*" hidden onchange="upAud(this)"></label>
+      <button class="g" id="btnMic" onclick="mic(this)">🎙 Rekam Suara</button>
+      <button class="g" onclick="if(cur()){cur().buf=null;cur().audName='';ren();}">Hapus Audio</button>
+    </div>
+    <div class="tag" id="audn" style="margin-top:4px"></div>
+  </div>
+</div>
+
+<div>
+  <div class="sticky box">
+    <canvas id="cv" width="720" height="1280"></canvas>
+    
+    <div class="row" style="margin-top:12px">
+      <button onclick="play(false)">▶ Play</button>
+      <button class="r" onclick="play(true)">🎬 Buat Video (MP4)</button>
+      <button class="g" onclick="stop()">■ Stop</button>
+    </div>
+
+    <label>Suara Narator (Puter.js TTS)</label>
+    <select id="voice" style="width:100%">
+      <option value="nova">Nova (OpenAI - Wanita, natural)</option>
+      <option value="alloy">Alloy (OpenAI - Netral)</option>
+      <option value="onyx">Onyx (OpenAI - Pria, berat)</option>
+      <option value="shimmer">Shimmer (OpenAI - Wanita, lembut)</option>
+    </select>
+    <div class="tag" id="vn" style="margin-top:4px">Puter TTS: narasi akan otomatis terekam ke MP4.</div>
+
+    <label>Musik Latar / BGM (Opsional)</label>
+    <input type="file" accept="audio/*" onchange="upBgm(this)">
+
+    <label><input type="checkbox" id="tts" checked> Putar suara narator otomatis</label>
+    
+    <div class="alert-box ok">
+      ✅ <b>Audio otomatis terekam!</b> Narasi menggunakan Puter TTS, tidak perlu lagi pengaturan "berbagi audio tab".
+    </div>
+    
+    <div class="tag" id="st" style="font-weight:bold;margin-top:6px;color:#a78bfa">Status: Siap.</div>
+  </div>
+</div>
+</div>
+
+<div class="progress-modal" id="modal">
+  <div class="spinner"></div>
+  <div id="modalText" style="font-size:16px;font-weight:700">Memproses…</div>
+  <div id="modalSub" style="font-size:12px;color:#9493a8;max-width:360px"></div>
+</div>
+
+<script>
+const GRADIENTS = [
+  ["#1e1b4b", "#431407"],
+  ["#0f172a", "#1e3a8a"],
+  ["#14092b", "#3b0764"],
+  ["#022c22", "#064e3b"],
+  ["#450a0a", "#1c1917"]
+];
+
+let S=[], i=0, bgm=null, AC, MD, G, run=null;
+let mediaRec=null, micChunks=[];
+
+const cv=document.getElementById('cv'), c=cv.getContext('2d'), $=id=>document.getElementById(id);
+
+$('boxStyle').onchange=()=>ren();
+$('textPos').onchange=()=>ren();
+
+const cur=()=>S[i];
+function autoDur(t){return Math.min(12,Math.max(3.5, 2.2 + (t||'').length * 0.08))}
+
+function mk(text, label, bgGradIndex=0){
+  return {
+    text, label,
+    dur: autoDur(text),
+    img: null,
+    grad: GRADIENTS[bgGradIndex % GRADIENTS.length],
+    buf: null, audName: '',
+    fontSize: 0, textOffsetY: 0
+  };
+}
+
+function gen(){
+  const o=$('opts').value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,8);
+  S=[
+    mk($('q').value.toUpperCase(),'PERTANYAAN', 0),
+    ...o.map((x,k)=>mk(String.fromCharCode(65+k)+'. '+x.toUpperCase(), 'PILIHAN ' + String.fromCharCode(65+k), k+1)),
+    mk($('cta').value.toUpperCase(),'KOMEN SEKARANG!', o.length+1)
+  ];
+  i=0;
+  ren();
+}
+
+function addS(){S.splice(i+1,0,mk('TEKS BARU','',i+1));i++;ren()}
+function dup(){if(cur()){S.splice(i+1,0,{...cur()});i++;ren()}}
+function del(){if(S.length>1){S.splice(i,1);i=Math.max(0,i-1);ren()}}
+function mv(d){const j=i+d;if(j<0||j>=S.length)return;[S[i],S[j]]=[S[j],S[i]];i=j;ren()}
+
+function onFontSizeInput(val){if(cur()){cur().fontSize=+val;$('fsVal').textContent=val+' px';ren();}}
+function resetFontSize(){if(cur()){cur().fontSize=0;$('fsVal').textContent='Auto';ren();}}
+function onTextOffsetInput(val){if(cur()){cur().textOffsetY=+val;$('tyVal').textContent=(+val>0?'+':'')+val+' px';ren();}}
+function resetTextOffset(){if(cur()){cur().textOffsetY=0;$('tyRange').value=0;$('tyVal').textContent='0 px';ren();}}
+
+function ren(){
+  $('list').innerHTML=S.map((s,k)=>`
+    <div class="mini ${k==i?'on':''}" onclick="i=${k};ren()">
+      ${s.img?`<img src="${s.img.src}">`:`<div class="mini-fallback" style="background:linear-gradient(135deg,${s.grad[0]},${s.grad[1]})">🎬</div>`}
+      <small>${s.label || s.text.slice(0,18)}</small>
+    </div>
+  `).join('');
+
+  const s=cur();
+  if(!s)return;
+  if(document.activeElement.id!='t')$('t').value=s.text||'';
+  if(document.activeElement.id!='lb')$('lb').value=s.label||'';
+  if(document.activeElement.id!='du')$('du').value=s.dur;
+  $('audn').textContent=s.audName?'Audio: '+s.audName:'';
+
+  if(s.fontSize && s.fontSize>0){
+    $('fsRange').value=s.fontSize;
+    $('fsVal').textContent=s.fontSize+' px';
+  } else {
+    $('fsRange').value=46;
+    $('fsVal').textContent='Auto';
+  }
+  $('tyRange').value=s.textOffsetY||0;
+  $('tyVal').textContent=((s.textOffsetY>0)?'+':'')+(s.textOffsetY||0)+' px';
+
+  if(!run)draw(s,1.5,0);
+}
+
+function wrap(t,max){
+  const w=(t||'').split(' '), L=[]; let l='';
+  for(const x of w){
+    const n=l?l+' '+x:x;
+    if(c.measureText(n).width>max && l){L.push(l);l=x}
+    else l=n;
+  }
+  if(l) L.push(l);
+  return L;
+}
+
+function rr(x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
+
+function drawCoverImage(img, W, H, zoom=1){
+  c.save();
+  c.translate(W/2, H/2);
+  c.scale(zoom, zoom);
+  const imgRatio = img.width / img.height;
+  const canvasRatio = W / H;
+  let dw, dh;
+  if(imgRatio > canvasRatio){ dh = H; dw = H * imgRatio; }
+  else { dw = W; dh = W / imgRatio; }
+  c.drawImage(img, -dw/2, -dh/2, dw, dh);
+  c.restore();
+}
+
+function draw(s, t, prog){
+  if(!s)return;
+  const W=720, H=1280;
+
+  const subtleZoom = 1.0 + Math.min(0.08, (t / (s.dur || 5)) * 0.08);
+  if(s.img){
+    drawCoverImage(s.img, W, H, subtleZoom);
+  } else {
+    const g=c.createLinearGradient(0,0,W,H);
+    g.addColorStop(0, s.grad ? s.grad[0] : '#1e1b4b');
+    g.addColorStop(1, s.grad ? s.grad[1] : '#000000');
+    c.fillStyle=g;
+    c.fillRect(0,0,W,H);
+    c.fillStyle="rgba(255,255,255,0.08)";
+    for(let k=0;k<6;k++){
+      c.beginPath();
+      c.arc((k*190+t*25)%W, (k*280+t*15)%H, 60+k*20, 0, 7);
+      c.fill();
+    }
+  }
+
+  const vig=c.createLinearGradient(0,0,0,H);
+  vig.addColorStop(0,"rgba(0,0,0,0.45)");
+  vig.addColorStop(0.35,"rgba(0,0,0,0.15)");
+  vig.addColorStop(0.65,"rgba(0,0,0,0.5)");
+  vig.addColorStop(1,"rgba(0,0,0,0.85)");
+  c.fillStyle=vig;
+  c.fillRect(0,0,W,H);
+
+  const posSetting = $('textPos').value;
+  let baseY = H / 2;
+  if(posSetting === 'bottom') baseY = H * 0.72;
+  else if(posSetting === 'top') baseY = H * 0.32;
+  baseY += (s.textOffsetY || 0);
+
+  let fs = s.fontSize || 0;
+  let L = [];
+  const maxW = 560;
+
+  if(fs > 0){
+    c.font = `800 ${fs}px "Baloo 2", sans-serif`;
+    L = wrap(s.text, maxW);
+  } else {
+    fs = 54;
+    do {
+      c.font = `800 ${fs}px "Baloo 2", sans-serif`;
+      L = wrap(s.text, maxW);
+      fs -= 2;
+    } while(L.length * fs * 1.25 > 420 && fs > 26);
+    fs += 2;
+  }
+
+  const lineH = fs * 1.25;
+  const totalH = L.length * lineH;
+  const startY = baseY - (totalH / 2);
+
+  const style = $('boxStyle').value;
+
+  c.save();
+  if(style === 'glass'){
+    c.fillStyle = "rgba(18, 20, 32, 0.72)";
+    c.shadowColor = "rgba(0,0,0,0.6)";
+    c.shadowBlur = 35;
+    rr(45, startY - 70, W - 90, totalH + 110, 32);
+    c.fill();
+    c.strokeStyle = "rgba(255,255,255,0.22)";
+    c.lineWidth = 2.5;
+    c.stroke();
+  } else if(style === 'banner'){
+    c.fillStyle = "rgba(0, 0, 0, 0.78)";
+    rr(50, startY - 65, W - 100, totalH + 100, 24);
+    c.fill();
+  } else if(style === 'card'){
+    c.fillStyle = "rgba(24, 27, 41, 0.88)";
+    c.shadowColor = "rgba(0,0,0,0.6)";
+    c.shadowBlur = 40;
+    rr(40, startY - 80, W - 80, totalH + 130, 36);
+    c.fill();
+    c.strokeStyle = "rgba(139, 92, 246, 0.4)";
+    c.lineWidth = 3;
+    c.stroke();
+  }
+  c.restore();
+
+  if(s.label){
+    c.font = '800 30px "Montserrat", sans-serif';
+    const lw = c.measureText(s.label).width + 48;
+    const badgeY = startY - (style === 'outline' ? 50 : 65);
+    c.fillStyle = "#8b5cf6";
+    c.shadowColor = "rgba(139, 92, 246, 0.5)";
+    c.shadowBlur = 15;
+    rr(W/2 - lw/2, badgeY - 26, lw, 52, 26);
+    c.fill();
+    c.shadowColor = "transparent";
+    c.fillStyle = "#ffffff";
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillText(s.label, W/2, badgeY);
+  }
+
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  L.forEach((l, k)=>{
+    const ly = startY + (k * lineH) + (lineH / 2);
+    if(style === 'outline'){
+      c.strokeStyle = "#000000";
+      c.lineWidth = 10;
+      c.strokeText(l, W/2, ly);
+    }
+    c.fillStyle = "#ffffff";
+    c.shadowColor = "rgba(0,0,0,0.8)";
+    c.shadowBlur = 8;
+    c.fillText(l, W/2, ly);
+    c.shadowColor = "transparent";
+  });
+
+  c.fillStyle = "rgba(255,255,255,0.25)";
+  rr(40, H - 40, W - 80, 8, 4);
+  c.fill();
+  c.fillStyle = "#8b5cf6";
+  rr(40, H - 40, Math.max(8, (W - 80) * prog), 8, 4);
+  c.fill();
+}
+
+/* ================= AUDIO ENGINE ================= */
+function initAudio(){
+  if(AC)return;
+  AC=new (window.AudioContext||window.webkitAudioContext)();
+  MD=AC.createMediaStreamDestination();
+  G=AC.createGain();
+  G.connect(AC.destination);
+  G.connect(MD);   // ← kunci: semua audio yang lewat G masuk ke stream export
+}
+
+async function dec(f){initAudio();return AC.decodeAudioData(await f.arrayBuffer())}
+
+function upImg(el){
+  const f=el.files[0];if(!f)return;
+  const im=new Image();
+  im.onload=()=>{if(cur()){cur().img=im;ren();}};
+  im.src=URL.createObjectURL(f);
+}
+
+function applyImgToAll(){
+  const s=cur();
+  if(!s || !s.img){alert('Upload gambar pada slide ini terlebih dahulu!');return;}
+  S.forEach(slide => { slide.img = s.img; });
+  ren();
+  alert('✅ Gambar berhasil diterapkan ke seluruh slide!');
+}
+
+async function upAud(el){
+  const f=el.files[0];if(!f)return;
+  const s=cur();
+  s.buf=await dec(f);
+  s.audName=f.name;
+  s.dur=Math.max(2, Math.ceil(s.buf.duration*2+1)/2);
+  ren();
+}
+
+async function upBgm(el){const f=el.files[0];if(f)bgm=await dec(f)}
+
+async function mic(btn){
+  if(mediaRec && mediaRec.state==='recording'){
+    mediaRec.stop(); btn.textContent='🎙 Rekam Suara'; return;
+  }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    initAudio();
+    mediaRec = new MediaRecorder(stream);
+    micChunks = [];
+    mediaRec.ondataavailable = e => { if(e.data.size) micChunks.push(e.data); };
+    mediaRec.onstop = async () => {
+      const blob = new Blob(micChunks, {type:'audio/webm'});
+      const ab = await blob.arrayBuffer();
+      const s = cur();
+      if(s){
+        s.buf = await AC.decodeAudioData(ab);
+        s.audName = 'Rekaman Suara';
+        s.dur = Math.max(2, Math.ceil(s.buf.duration*2+1)/2);
+      }
+      stream.getTracks().forEach(t=>t.stop());
+      btn.textContent='🎙 Rekam Suara';
+      ren();
+    };
+    mediaRec.start();
+    btn.textContent='⏹ Berhenti Rekam';
+  }catch(err){ alert('Gagal membuka mikrofon: '+err.message); }
+}
+
+function src(buf,vol,loop){
+  const n=AC.createBufferSource(), g=AC.createGain();
+  n.buffer=buf; n.loop=!!loop; g.gain.value=vol;
+  n.connect(g).connect(G);
+  n.start();
+  return n;
+}
+
+function stop(){
+  if(run){run.stop=true}
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+/* ================= PUTER TTS (menggantikan speechSynthesis) ================= */
+async function speakWithPuter(text, onEnd){
+  try {
+    const voiceId = $('voice').value || 'nova';
+    const audioEl = await putterTTS(text, voiceId);
+    if(!audioEl){ if(onEnd) onEnd(); return; }
+
+    const resp = await fetch(audioEl.src);
+    const arrayBuf = await resp.arrayBuffer();
+    const audioBuf = await AC.decodeAudioData(arrayBuf);
+
+    const source = AC.createBufferSource();
+    source.buffer = audioBuf;
+    source.connect(G);   // G sudah terhubung ke speaker & MD
+    source.start();
+
+    if (onEnd) source.onended = onEnd;
+  } catch (err) {
+    console.error('Puter TTS gagal:', err);
+    if (onEnd) onEnd();
+  }
+}
+
+/* wrapper agar nama fungsi lebih jelas */
+async function putterTTS(text, voice){
+  return await puter.ai.txt2speech(text, {
+    provider: 'openai',
+    voice: voice,
+    model: 'gpt-4o-mini-tts',
+    response_format: 'mp3'
+  });
+}
+
+function getSupportedMime(){
+  const list = [
+    'video/mp4;codecs=avc1,mp4a.40.2',
+    'video/mp4;codecs=avc1',
+    'video/mp4;codecs=h264',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm'
+  ];
+  for(const m of list){
+    if(MediaRecorder.isTypeSupported(m)) return m;
+  }
+  return '';
+}
+
+function showModal(text, sub){
+  $('modalText').textContent = text || '';
+  $('modalSub').textContent = sub || '';
+  $('modal').classList.add('show');
+}
+function hideModal(){ $('modal').classList.remove('show'); }
+
+/* ================= PLAY / RECORD ================= */
+async function play(rec){
+  stop();
+  await new Promise(r=>setTimeout(r,80));
+  await initAudio();
+  await AC.resume();
+  await document.fonts.load('800 40px "Baloo 2"').catch(()=>{});
+
+  const me = run = {stop:false};
+  const n = S.length;
+  let mr = null, chunks = [], mime = '';
+
+  if(rec){
+    const st = cv.captureStream(30);
+    // Selalu pakai MD: BGM + buffer + Puter TTS semuanya lewat G → MD
+    MD.stream.getAudioTracks().forEach(t => st.addTrack(t));
+
+    mime = getSupportedMime();
+    if(!mime){
+      run = null;
+      alert('Browser tidak mendukung MediaRecorder MP4/WebM.');
+      return;
     }
 
-    function toggleTimeframe() {
-      currentTfIndex = (currentTfIndex + 1) % timeframes.length;
-      const tf = timeframes[currentTfIndex];
-      currentInterval = tf.value;
-      document.getElementById('btn-tf').innerText = tf.display;
-      document.getElementById('current-tf').innerText = tf.display;
-      fetchData();
-    }
-
-    // Fungsi Fetching Data
-    async function fetchData() {
-      const statusElement = document.getElementById('data-status');
-      statusElement.className = 'status-badge';
-      statusElement.innerText = 'Mengunduh...';
-      
-      const url = `https://api.twelvedata.com/time_series?symbol=${currentSymbol}&interval=${currentInterval}&apikey=${apiKey}&outputsize=150`;
-
-      try {
-        const response = await fetch(url);
-        const json = await response.json();
-
-        if (json.status === 'ok' && json.values) {
-          // Konversi urutan data dari terlama ke terbaru
-          rawCandles = json.values.map(d => ({
-            time: d.datetime,
-            open: parseFloat(d.open),
-            high: parseFloat(d.high),
-            low: parseFloat(d.low),
-            close: parseFloat(d.close)
-          })).reverse();
-
-          statusElement.innerText = 'LIVE API';
-          statusElement.classList.add('status-live');
-          processAndDraw();
-        } else {
-          throw new Error(json.message || 'Pembatasan API / Error respons');
-        }
-      } catch (err) {
-        console.warn('API error, beralih menggunakan data simulasi:', err.message);
-        statusElement.innerText = 'DEMO DATA (Limit API)';
-        statusElement.classList.add('status-demo');
-        rawCandles = generateDemoData();
-        processAndDraw();
-      }
-    }
-
-    // Generator data simulasi apabila API Key mencapai batas limit
-    function generateDemoData() {
-      const data = [];
-      let price = currentSymbol === 'EUR/USD' ? 1.08500 : 1.27200;
-      let date = new Date();
-      for (let i = 0; i < 150; i++) {
-        const change = (Math.random() - 0.495) * 0.0016; 
-        const open = price;
-        const close = price + change;
-        const high = Math.max(open, close) + Math.random() * 0.0006;
-        const low = Math.min(open, close) - Math.random() * 0.0006;
-        
-        data.push({
-          time: date.toISOString().replace('T', ' ').substring(0, 19),
-          open, high, low, close
-        });
-        price = close;
-        date.setHours(date.getHours() - 1);
-      }
-      return data.reverse();
-    }
-
-    // Perhitungan Indikator Teknis
-    function calculateSMA(data, period) {
-      const sma = [];
-      for (let i = 0; i < data.length; i++) {
-        if (i < period - 1) {
-          sma.push(null);
-        } else {
-          const sum = data.slice(i - period + 1, i + 1).reduce((acc, val) => acc + val, 0);
-          sma.push(sum / period);
-        }
-      }
-      return sma;
-    }
-
-    function calculateEMA(data, period) {
-      const ema = [];
-      const k = 2 / (period + 1);
-      let prevEma = null;
-
-      for (let i = 0; i < data.length; i++) {
-        if (data[i] === null) {
-          ema.push(null);
-          continue;
-        }
-        if (prevEma === null) {
-          // Inisialisasi awal dengan SMA sederhana
-          const validSegment = data.slice(Math.max(0, i - period + 1), i + 1).filter(v => v !== null);
-          if (validSegment.length < period) {
-            ema.push(null);
-          } else {
-            prevEma = validSegment.reduce((s, v) => s + v, 0) / period;
-            ema.push(prevEma);
-          }
-        } else {
-          const curEma = data[i] * k + prevEma * (1 - k);
-          ema.push(curEma);
-          prevEma = curEma;
-        }
-      }
-      return ema;
-    }
-
-    function calculateBollingerBands(closes) {
-      const middle = calculateSMA(closes, InpBandsPeriod);
-      const upper = [];
-      const lower = [];
-
-      for (let i = 0; i < closes.length; i++) {
-        if (middle[i] === null) {
-          upper.push(null);
-          lower.push(null);
-        } else {
-          const slice = closes.slice(i - InpBandsPeriod + 1, i + 1);
-          const mean = middle[i];
-          const variance = slice.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / InpBandsPeriod;
-          const stdDev = Math.sqrt(variance);
-          upper.push(mean + InpBandsDeviations * stdDev);
-          lower.push(mean - InpBandsDeviations * stdDev);
-        }
-      }
-      return { middle, upper, lower };
-    }
-
-    function calculateRSI(closes, period = 14) {
-      const rsi = new Array(closes.length).fill(null);
-      if (closes.length <= period) return rsi;
-
-      let avgGain = 0;
-      let avgLoss = 0;
-
-      // Nilai awal
-      for (let i = 1; i <= period; i++) {
-        const diff = closes[i] - closes[i - 1];
-        if (diff > 0) avgGain += diff;
-        else avgLoss -= diff;
-      }
-      avgGain /= period;
-      avgLoss /= period;
-
-      rsi[period] = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
-
-      for (let i = period + 1; i < closes.length; i++) {
-        const diff = closes[i] - closes[i - 1];
-        const gain = diff > 0 ? diff : 0;
-        const loss = diff < 0 ? -diff : 0;
-
-        avgGain = (avgGain * (period - 1) + gain) / period;
-        avgLoss = (avgLoss * (period - 1) + loss) / period;
-
-        rsi[i] = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
-      }
-      return rsi;
-    }
-
-    function processAndDraw() {
-      const closes = rawCandles.map(c => c.close);
-
-      // 1. Bollinger Bands
-      const bands = calculateBollingerBands(closes);
-
-      // 2. Chart Utama EMA Golden Cross (EMA 5, 8, 13)
-      const mainEma5 = calculateEMA(closes, FastPeriod);
-      const mainEma8 = calculateEMA(closes, MediumPeriod);
-      const mainEma13 = calculateEMA(closes, SlowPeriod);
-
-      // Status tren Chart Utama
-      const mainStates = [];
-      for (let i = 0; i < closes.length; i++) {
-        const e5 = mainEma5[i];
-        const e8 = mainEma8[i];
-        const e13 = mainEma13[i];
-        if (e5 && e8 && e13) {
-          if (e5 > e8 && e8 > e13) mainStates.push(1); // BUY
-          else if (e5 < e8 && e8 < e13) mainStates.push(2); // SELL
-          else mainStates.push(0); // NETRAL
-        } else {
-          mainStates.push(0);
-        }
-      }
-
-      // 3. Subwindow RSI (Period 14)
-      const rsiValues = calculateRSI(closes, InpRSIPeriod);
-
-      // 4. Subwindow EMA Golden Cross pada RSI (EMA 5, 8, 13 dari RSI)
-      const subEma5 = calculateEMA(rsiValues, FastPeriod);
-      const subEma8 = calculateEMA(rsiValues, MediumPeriod);
-      const subEma13 = calculateEMA(rsiValues, SlowPeriod);
-
-      // Status tren Subwindow
-      const subStates = [];
-      for (let i = 0; i < closes.length; i++) {
-        const se5 = subEma5[i];
-        const se8 = subEma8[i];
-        const se13 = subEma13[i];
-        if (se5 && se8 && se13) {
-          if (se5 > se8 && se8 > se13) subStates.push(1); // BUY
-          else if (se5 < se8 && se8 < se13) subStates.push(2); // SELL
-          else subStates.push(0); // NETRAL
-        } else {
-          subStates.push(0);
-        }
-      }
-
-      // Tampilkan status sinyal tren pada kotak info di atas grafik
-      const latestState = mainStates[mainStates.length - 1];
-      const signalBox = document.getElementById('signal-state');
-      if (latestState === 1) {
-        signalBox.innerText = 'BUY (BULLISH) 🟢';
-        signalBox.style.color = '#1e90ff';
-      } else if (latestState === 2) {
-        signalBox.innerText = 'SELL (BEARISH) 🔴';
-        signalBox.style.color = '#ff1493';
-      } else {
-        signalBox.innerText = 'NETRAL (KONSOLIDASI) ⚪';
-        signalBox.style.color = '#888888';
-      }
-
-      // Render Visualisasi ke Canvas
-      drawChart(
-        rawCandles,
-        bands,
-        { ema5: mainEma5, ema8: mainEma8, ema13: mainEma13 },
-        mainStates,
-        rsiValues,
-        { ema5: subEma5, ema8: subEma8, ema13: subEma13 },
-        subStates
-      );
-    }
-
-    function drawChart(candles, bands, mainEmas, mainStates, rsi, subEmas, subStates) {
-      const canvas = document.getElementById('forexChart');
-      const ctx = canvas.getContext('2d');
-
-      // Penyesuaian ukuran Resolusi Tinggi (DPI)
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-
-      const width = rect.width;
-      const height = rect.height;
-
-      // Hapus & Atur Background Hitam
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, width, height);
-
-      const paddingRight = 60;
-      const paddingLeft = 10;
-      const paddingTop = 30;
-      const paddingBottom = 25;
-      const gap = 15;
-
-      const totalChartHeight = height - paddingTop - paddingBottom;
-      const mainHeight = Math.floor(totalChartHeight * 0.65);
-      const subHeight = totalChartHeight - mainHeight - gap;
-
-      const chartYTop = paddingTop;
-      const chartYBottom = paddingTop + mainHeight;
-      const subYTop = chartYBottom + gap;
-      const subYBottom = subYTop + subHeight;
-
-      const plotWidth = width - paddingLeft - paddingRight;
-
-      // Batasi lilin (candle) yang ditampilkan di layar (misal 70 lilin terakhir)
-      const maxCandles = 70;
-      const totalCandles = candles.length;
-      const startIndex = Math.max(0, totalCandles - maxCandles);
-      const visibleCount = totalCandles - startIndex;
-
-      const candleWidth = plotWidth / visibleCount;
-      const getX = (i) => paddingLeft + (i - startIndex) * candleWidth + candleWidth / 2;
-
-      // 1. Gambar Garis Kisi Vertikal (Grid Waktu)
-      ctx.strokeStyle = '#1d1d1d';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      for (let i = startIndex; i < totalCandles; i++) {
-        if ((i - startIndex) % 10 === 0) {
-          const x = getX(i);
-          ctx.beginPath();
-          ctx.moveTo(x, chartYTop);
-          ctx.lineTo(x, chartYBottom);
-          ctx.moveTo(x, subYTop);
-          ctx.lineTo(x, subYBottom);
-          ctx.stroke();
-
-          // Label waktu di bagian paling bawah
-          ctx.fillStyle = '#888888';
-          ctx.font = '10px monospace';
-          ctx.textAlign = 'center';
-          const t = candles[i].time;
-          const timeStr = t.includes(' ') ? t.split(' ')[1].substring(0, 5) : t.substring(5, 10);
-          ctx.fillText(timeStr, x, height - 5);
-        }
-      }
-      ctx.setLineDash([]);
-
-      // 2. Kalkulasi Batas Minimum & Maksimum Skala Grafik Utama
-      let minPrice = Infinity;
-      let maxPrice = -Infinity;
-      for (let i = startIndex; i < totalCandles; i++) {
-        const c = candles[i];
-        if (c.low < minPrice) minPrice = c.low;
-        if (c.high > maxPrice) maxPrice = c.high;
-        if (bands.upper[i] && bands.upper[i] > maxPrice) maxPrice = bands.upper[i];
-        if (bands.lower[i] && bands.lower[i] < minPrice) minPrice = bands.lower[i];
-      }
-
-      // Beri batas ruang atas & bawah (padding 5%)
-      const priceRange = maxPrice - minPrice;
-      minPrice -= priceRange * 0.05;
-      maxPrice += priceRange * 0.05;
-
-      const getMainY = (price) => chartYBottom - ((price - minPrice) / (maxPrice - minPrice)) * mainHeight;
-
-      // Garis Kisi Horisontal (Skala Harga)
-      ctx.strokeStyle = '#111111';
-      ctx.setLineDash([2, 2]);
-      const steps = 5;
-      for (let s = 0; s <= steps; s++) {
-        const p = minPrice + (priceRange * s) / steps;
-        const y = getMainY(p);
-        ctx.beginPath();
-        ctx.moveTo(paddingLeft, y);
-        ctx.lineTo(width - paddingRight, y);
-        ctx.stroke();
-
-        ctx.fillStyle = '#888888';
-        ctx.font = '10px monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(p.toFixed(5), width - paddingRight + 5, y + 3);
-      }
-      ctx.setLineDash([]);
-
-      // 3. Gambar Bollinger Bands (LightSeaGreen)
-      ctx.strokeStyle = '#20B2AA';
-      ctx.lineWidth = 1;
-      
-      // Upper Band
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      for (let i = startIndex; i < totalCandles; i++) {
-        if (bands.upper[i]) {
-          const x = getX(i);
-          const y = getMainY(bands.upper[i]);
-          if (i === startIndex || !bands.upper[i - 1]) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-      }
-      ctx.stroke();
-
-      // Lower Band
-      ctx.beginPath();
-      for (let i = startIndex; i < totalCandles; i++) {
-        if (bands.lower[i]) {
-          const x = getX(i);
-          const y = getMainY(bands.lower[i]);
-          if (i === startIndex || !bands.lower[i - 1]) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Middle Band (SMA)
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      for (let i = startIndex; i < totalCandles; i++) {
-        if (bands.middle[i]) {
-          const x = getX(i);
-          const y = getMainY(bands.middle[i]);
-          if (i === startIndex || !bands.middle[i - 1]) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-      }
-      ctx.stroke();
-
-      // 4. Gambar Candlestick MT4 Style
-      for (let i = startIndex; i < totalCandles; i++) {
-        const c = candles[i];
-        const x = getX(i);
-        const w = Math.max(1.5, candleWidth * 0.7);
-
-        const yOpen = getMainY(c.open);
-        const yClose = getMainY(c.close);
-        const yHigh = getMainY(c.high);
-        const yLow = getMainY(c.low);
-
-        const isBullish = c.close >= c.open;
-        ctx.strokeStyle = isBullish ? '#00ff00' : '#ffffff';
-        ctx.lineWidth = 1.2;
-
-        // Ekor Lilin
-        ctx.beginPath();
-        ctx.moveTo(x, yHigh);
-        ctx.lineTo(x, yLow);
-        ctx.stroke();
-
-        // Badan Lilin
-        if (isBullish) {
-          // Bullish: Hollow Green
-          ctx.fillStyle = '#000000';
-          ctx.fillRect(x - w / 2, Math.min(yOpen, yClose), w, Math.abs(yOpen - yClose));
-          ctx.strokeRect(x - w / 2, Math.min(yOpen, yClose), w, Math.abs(yOpen - yClose));
-        } else {
-          // Bearish: Solid White
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(x - w / 2, Math.min(yOpen, yClose), w, Math.abs(yOpen - yClose));
-          ctx.strokeRect(x - w / 2, Math.min(yOpen, yClose), w, Math.abs(yOpen - yClose));
-        }
-      }
-
-      // 5. Gambar Garis Tren EMA Golden Cross Utama (EMA 5, 8, 13)
-      const drawMainEMA = (emaArray) => {
-        for (let i = startIndex + 1; i < totalCandles; i++) {
-          if (!emaArray[i - 1] || !emaArray[i]) continue;
-
-          ctx.beginPath();
-          ctx.moveTo(getX(i - 1), getMainY(emaArray[i - 1]));
-          ctx.lineTo(getX(i), getMainY(emaArray[i]));
-
-          // Deteksi status untuk menentukan segment warna
-          const state = mainStates[i];
-          if (state === 1) ctx.strokeStyle = '#1e90ff'; // DodgerBlue (BUY)
-          else if (state === 2) ctx.strokeStyle = '#ff1493'; // DeepPink (SELL)
-          else ctx.strokeStyle = '#808080'; // Gray (NEUTRAL)
-
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-      };
-      drawMainEMA(mainEmas.ema5);
-      drawMainEMA(mainEmas.ema8);
-      drawMainEMA(mainEmas.ema13);
-
-      // Label Chart Utama
-      ctx.fillStyle = '#00ff00';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('CHART UTAMA', paddingLeft + 10, chartYTop + 15);
-
-      // 6. Subwindow (Hanya Menampilkan Level 15, 50, dan 85)
-      const getSubY = (val) => subYBottom - (val / 100) * subHeight;
-
-      ctx.strokeStyle = '#555555';
-      ctx.setLineDash([2, 2]);
-      ctx.lineWidth = 1;
-      const targetLevels = [15, 50, 85];
-      targetLevels.forEach(lvl => {
-        const y = getSubY(lvl);
-        ctx.beginPath();
-        ctx.moveTo(paddingLeft, y);
-        ctx.lineTo(width - paddingRight, y);
-        ctx.stroke();
-
-        ctx.fillStyle = '#888888';
-        ctx.font = '10px monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(lvl.toString(), width - paddingRight + 5, y + 3);
+    try {
+      mr = new MediaRecorder(st, {
+        mimeType: mime,
+        videoBitsPerSecond: 8000000,
+        audioBitsPerSecond: 128000
       });
-      ctx.setLineDash([]);
+    } catch(e){
+      mr = new MediaRecorder(st, { videoBitsPerSecond: 8000000 });
+    }
+    mr.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+    mr.start(250);
+  }
 
-      // Gambar EMA Kombinasi RSI di Subwindow (EMA 5, 8, 13 dari RSI)
-      const drawSubEMA = (emaArray) => {
-        for (let i = startIndex + 1; i < totalCandles; i++) {
-          if (!emaArray[i - 1] || !emaArray[i]) continue;
+  const bs = bgm ? src(bgm, 0.25, true) : null;
+  const say = (!rec && $('tts').checked) || rec;
 
-          ctx.beginPath();
-          ctx.moveTo(getX(i - 1), getSubY(emaArray[i - 1]));
-          ctx.lineTo(getX(i), getSubY(emaArray[i]));
+  for(let k=0; k<n && !me.stop; k++){
+    const s = S[k];
+    i = k;
+    ren();
 
-          const state = subStates[i];
-          if (state === 1) ctx.strokeStyle = '#1e90ff'; // DodgerBlue
-          else if (state === 2) ctx.strokeStyle = '#ff1493'; // DeepPink
-          else ctx.strokeStyle = '#808080'; // Gray
+    const cs = s.buf ? src(s.buf, 1) : null;
+    let spDone = true, spT = 0;
 
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-      };
-      drawSubEMA(subEmas.ema5);
-      drawSubEMA(subEmas.ema8);
-      drawSubEMA(subEmas.ema13);
-
-      // Label Subwindow
-      ctx.fillStyle = '#00ff00';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('WINDOW', paddingLeft + 10, subYTop + 15);
-
-      // Garis Batas Antara Chart Utama & Subwindow
-      ctx.strokeStyle = '#333333';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, chartYBottom + gap / 2);
-      ctx.lineTo(width, chartYBottom + gap / 2);
-      ctx.stroke();
+    // Jika slide tidak punya audio buffer, pakai Puter TTS
+    if(!s.buf && say){
+      spDone = false;
+      await speakWithPuter(s.text, () => {
+        spDone = true;
+        spT = performance.now();
+      });
     }
 
-    // Penyesuaian saat resolusi ukuran layar berubah
-    window.addEventListener('resize', () => {
-      if (rawCandles.length > 0) processAndDraw();
+    const t0 = performance.now();
+    await new Promise(res => {
+      (function loop(){
+        if(me.stop){ res(); return; }
+        const el = (performance.now() - t0) / 1000;
+        const speechFinished = spDone && (spT === 0 || performance.now() - spT > 450);
+        if((el >= s.dur && speechFinished) || el > s.dur + 25){
+          res(); return;
+        }
+        draw(s, el, (k + Math.min(1, el / s.dur)) / n);
+        $('st').textContent = (rec?'🔴 Merekam MP4… ':'▶ ') + 
+                              `Slide ${k+1}/${n} ` + (spDone?'':'(Narator...)');
+        requestAnimationFrame(loop);
+      })();
     });
 
-    // Jalankan inisialisasi pertama kali
-    fetchData();
-  </script>
+    if(cs) try{ cs.stop() }catch(e){}
+  }
+
+  if(!me.stop) await new Promise(r=>setTimeout(r, 600));
+  if(bs) try{ bs.stop() }catch(e){}
+  run = null;
+
+  if(rec && mr){
+    await new Promise(r => { mr.onstop = r; mr.stop(); });
+
+    if(me.stop){
+      $('st').textContent = 'Perekaman dibatalkan.';
+      return;
+    }
+
+    const isMp4 = mime.includes('mp4');
+    const ext = isMp4 ? 'mp4' : 'webm';
+    const blob = new Blob(chunks, { type: mime || 'video/webm' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `kuis_fullscreen_${Date.now()}.${ext}`;
+    a.click();
+    $('st').textContent = `✅ Berhasil! Video ${ext.toUpperCase()} tersimpan.`;
+  } else {
+    $('st').textContent = 'Pemutaran selesai.';
+    ren();
+  }
+}
+
+gen();
+</script>
 </body>
 </html>
