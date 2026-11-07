@@ -512,11 +512,12 @@ function stop(){
 }
 
 /* ================= PUTER TTS ================= */
-async function speakWithPuter(text, onEnd){
-  if(!text){ if(onEnd) onEnd(); return; }
+// Siapkan TTS TANPA memutar. Return AudioBuffer atau null.
+async function prepareTTS(text){
+  if(!text) return null;
   try {
     const voiceId = $('voice').value || 'nova';
-    console.log('[TTS] request:', text.slice(0,60), '| voice:', voiceId);
+    console.log('[TTS] prepare:', text.slice(0,60), '| voice:', voiceId);
 
     if(typeof puter === 'undefined' || !puter.ai || !puter.ai.txt2speech){
       throw new Error('Puter.js tidak dimuat. Cek <script src="https://js.puter.com/v2/">');
@@ -528,35 +529,45 @@ async function speakWithPuter(text, onEnd){
       model: 'gpt-4o-mini-tts'
     });
     if(!audioEl || !audioEl.src) throw new Error('TTS tidak mengembalikan audio');
-    console.log('[TTS] src:', audioEl.src.slice(0,80));
 
-    // Coba decode via fetch (cara paling bersih: masuk ke AudioGraph)
-    try{
-      const resp = await fetch(audioEl.src);
-      const arrayBuf = await resp.arrayBuffer();
-      const audioBuf = await AC.decodeAudioData(arrayBuf);
-      console.log('[TTS] decoded duration:', audioBuf.duration.toFixed(2), 's');
-
-      const source = AC.createBufferSource();
-      source.buffer = audioBuf;
-      source.connect(G); // G → speaker + MD (rekam)
-      source.start();
-      activeSources.push(source);
-      source.onended = () => {
-        activeSources = activeSources.filter(s => s !== source);
-        console.log('[TTS] ended');
-        if(onEnd) onEnd();
-      };
-    } catch(decodeErr){
-      // Fallback: mainkan via HTMLAudioElement (TIDAK masuk rekaman, tapi setidaknya user dengar)
-      console.warn('[TTS] decode gagal, fallback ke HTMLAudioElement:', decodeErr);
-      audioEl.onended = () => { if(onEnd) onEnd(); };
-      audioEl.play().catch(() => { if(onEnd) onEnd(); });
-    }
+    const resp = await fetch(audioEl.src);
+    const arrayBuf = await resp.arrayBuffer();
+    const audioBuf = await AC.decodeAudioData(arrayBuf);
+    console.log('[TTS] prepared duration:', audioBuf.duration.toFixed(2), 's');
+    return audioBuf;
   } catch (err) {
-    console.error('[TTS] error:', err);
-    if (onEnd) onEnd();
+    console.error('[TTS] prepare error:', err);
+    return null;
   }
+}
+
+// Putar buffer yang sudah siap. Return promise resolve saat audio selesai.
+function playPrepared(buffer, vol=1){
+  return new Promise(resolve => {
+    if(!buffer){ resolve(); return; }
+    const source = AC.createBufferSource();
+    const g = AC.createGain();
+    g.gain.value = vol;
+    source.buffer = buffer;
+    source.connect(g).connect(G); // G → speaker + MD (rekam)
+    activeSources.push(source);
+    source.onended = () => {
+      activeSources = activeSources.filter(s => s !== source);
+      resolve();
+    };
+    source.start();
+  });
+}
+
+// Tunggu beberapa frame agar canvas benar-benar ter-commit ke captureStream
+function waitFrames(n=2){
+  return new Promise(resolve => {
+    let left = n;
+    (function tick(){
+      if(left-- <= 0) return resolve();
+      requestAnimationFrame(tick);
+    })();
+  });
 }
 
 /* ================= MIME ================= */
@@ -598,12 +609,40 @@ async function play(rec){
 
   const me = run = {stop:false};
   const n = S.length;
+  const say = rec || $('tts').checked;
+
+  // ===== PREFETCH SEMUA TTS SEBELUM MULAI =====
+  // Agar tidak ada jeda hening antar slide & durasi slide sudah pasti benar.
+  const ttsCache = {}; // index -> AudioBuffer
+  if(say){
+    let needPrefetch = false;
+    for(let k=0;k<n;k++){ if(!S[k].buf && S[k].text){ needPrefetch = true; break; } }
+    if(needPrefetch){
+      showModal('Menyiapkan narasi…', 'Mengunduh semua audio TTS');
+      for(let k=0;k<n;k++){
+        if(me.stop) break;
+        if(S[k].buf) continue; // sudah ada audio custom
+        $('modalSub').textContent = `Narasi ${k+1}/${n}…`;
+        const buf = await prepareTTS(S[k].text);
+        if(buf){
+          ttsCache[k] = buf;
+          // Sesuaikan durasi slide agar >= durasi narasi SEBELUM pemutaran
+          if(buf.duration + 0.6 > S[k].dur){
+            S[k].dur = Math.ceil(buf.duration + 0.6);
+            console.log(`[Slide ${k+1}] durasi disesuaikan ke ${S[k].dur}s`);
+          }
+        }
+      }
+      hideModal();
+      if(me.stop){ run = null; $('st').textContent = 'Dibatalkan.'; return; }
+    }
+  }
+
   let mr = null, chunks = [], mime = '';
 
   if(rec){
     const st = cv.captureStream(30);
 
-    // ⚠️ KRITIS: pastikan MD punya audio track sebelum add ke stream
     const audioTracks = MD.stream.getAudioTracks();
     if(audioTracks.length === 0){
       run = null;
@@ -636,34 +675,26 @@ async function play(rec){
   }
 
   const bs = bgm ? src(bgm, 0.25, true) : null;
-  const say = (!rec && $('tts').checked) || rec;
 
   for(let k=0; k<n && !me.stop; k++){
     const s = S[k];
     i = k;
     ren();
 
-    const cs = s.buf ? src(s.buf, 1) : null;
-    let spDone = true, spT = 0, ttsDuration = 0;
+    // ===== 1) RENDER FRAME PERTAMA SLIDE INI DULU =====
+    // Supaya canvas sudah menampilkan slide yang benar SEBELUM suara keluar.
+    draw(s, 0, k / n);
+    await waitFrames(2);
 
-    if(!s.buf && say){
-      spDone = false;
-      // Tunggu TTS selesai (karena kita perlu tahu durasi TTS untuk memperpanjang slide)
-      await new Promise(resolve => {
-        speakWithPuter(s.text, () => { spDone = true; spT = performance.now(); resolve(); });
-        // safety timeout: maksimal 20 detik per TTS
-        setTimeout(() => { if(!spDone){ spDone = true; spT = performance.now(); resolve(); } }, 20000);
-      });
-      // Setelah TTS dimulai, kita perlu memperpanjang durasi slide jika TTS lebih panjang
-      // Ambil sisa waktu dari audio buffer TTS yang aktif (jika ada)
-      const lastSource = activeSources[activeSources.length - 1];
-      if(lastSource && lastSource.buffer){
-        ttsDuration = lastSource.buffer.duration;
-        if(ttsDuration > s.dur){
-          s.dur = Math.ceil(ttsDuration + 0.6); // +0.6s jeda
-          console.log(`[Slide ${k+1}] durasi diperpanjang ke ${s.dur}s untuk narasi`);
-        }
-      }
+    // ===== 2) AMBIL AUDIO SLIDE (SUDAH SIAP DARI PREFETCH) =====
+    const ttsBuffer = ttsCache[k] || null;
+    const customSource = s.buf ? src(s.buf, 1) : null;
+
+    // ===== 3) MULAI AUDIO & ANIMASI BERSAMAAN =====
+    // Audio mulai SEKARANG, saat slide sudah ter-render & ter-capture.
+    let ttsPromise = null;
+    if(ttsBuffer){
+      ttsPromise = playPrepared(ttsBuffer, 1);
     }
 
     const t0 = performance.now();
@@ -671,18 +702,15 @@ async function play(rec){
       (function loop(){
         if(me.stop){ res(); return; }
         const el = (performance.now() - t0) / 1000;
-        const speechFinished = spDone && (spT === 0 || performance.now() - spT > 450);
-        if((el >= s.dur && speechFinished) || el > s.dur + 25){
-          res(); return;
-        }
+        if(el >= s.dur){ res(); return; }
         draw(s, el, (k + Math.min(1, el / s.dur)) / n);
-        $('st').textContent = (rec?'🔴 Merekam MP4… ':'▶ ') + 
-                              `Slide ${k+1}/${n} ` + (spDone?'':'(Narator...)');
+        $('st').textContent = (rec?'🔴 Merekam MP4… ':'▶ ') + `Slide ${k+1}/${n}`;
         requestAnimationFrame(loop);
       })();
     });
 
-    if(cs) try{ cs.stop() }catch(e){}
+    if(customSource) try{ customSource.stop() }catch(e){}
+    // TTS biarkan selesai natural (durasi slide sudah >= durasi TTS)
   }
 
   if(!me.stop) await new Promise(r=>setTimeout(r, 600));
